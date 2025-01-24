@@ -1,17 +1,16 @@
 from flask import Flask, request, jsonify, send_from_directory
 import pandas as pd
-import os
 import PyPDF2
+from io import BytesIO
 
 app = Flask(__name__)
 
 # Function to extract text from a PDF file
-def extract_text_from_pdf(file_path):
-    with open(file_path, 'rb') as file:
-        reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
+def extract_text_from_pdf(file):
+    reader = PyPDF2.PdfReader(file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
     return text
 
 # Function to extract TOTAL CYCLE TIME from text
@@ -27,9 +26,9 @@ def extract_cycle_time(text):
 
 @app.route('/process', methods=['POST'])
 def process_files():
-    # Get uploaded Excel file and directory path
+    # Get uploaded Excel file and files to scan
     excel_file = request.files['excelFile']
-    file_directory = request.form['fileDirectory']
+    files_to_scan = request.files.getlist('filesToScan')
 
     # Read the Excel file
     df = pd.read_excel(excel_file)
@@ -38,20 +37,19 @@ def process_files():
     if "Filename" not in df.columns:
         return jsonify({"error": "The Excel file must contain a 'Filename' column."}), 400
 
-    # Scan files and extract TOTAL CYCLE TIME
+    # Create a dictionary to store the results
     results = []
-    for filename in df["Filename"]:
-        file_path = os.path.join(file_directory, filename)
-        if os.path.exists(file_path):
-            if file_path.endswith('.pdf'):
-                text = extract_text_from_pdf(file_path)
+
+    # Scan uploaded files and extract TOTAL CYCLE TIME
+    for file in files_to_scan:
+        filename = file.filename
+        if filename in df["Filename"].values:
+            if filename.endswith('.pdf'):
+                text = extract_text_from_pdf(file)
             else:
-                with open(file_path, 'r') as file:
-                    text = file.read()
+                text = file.read().decode('utf-8')
             cycle_time = extract_cycle_time(text)
             results.append({"Filename": filename, "TOTAL CYCLE TIME": cycle_time if cycle_time else "Not found"})
-        else:
-            results.append({"Filename": filename, "TOTAL CYCLE TIME": "File not found"})
 
     # Update the Excel file with the results
     results_df = pd.DataFrame(results)
