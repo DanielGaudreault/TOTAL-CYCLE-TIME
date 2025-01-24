@@ -2,31 +2,34 @@ from flask import Flask, request, jsonify, send_from_directory
 import pandas as pd
 import os
 from datetime import datetime
+import PyPDF2  # For PDF processing
 
 app = Flask(__name__)
 
-# Function to calculate TOTAL CYCLE TIME (customize this based on your file structure)
-def calculate_total_cycle_time(file_path):
+# Function to extract text from a PDF file
+def extract_text_from_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+    return text
+
+# Function to calculate processing time (customize this based on your file structure)
+def calculate_processing_time(file_path):
     """
-    Example: Calculate TOTAL CYCLE TIME based on timestamps in the file.
+    Example: Calculate processing time based on file content.
     Replace this logic with your actual calculation.
     """
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    
-    # Example: Extract timestamps and calculate the difference
-    timestamps = []
-    for line in lines:
-        if "Timestamp:" in line:  # Replace with your actual timestamp identifier
-            timestamp_str = line.split("Timestamp:")[1].strip()
-            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")  # Adjust format as needed
-            timestamps.append(timestamp)
-    
-    if len(timestamps) >= 2:
-        total_cycle_time = (timestamps[-1] - timestamps[0]).total_seconds()  # Calculate time difference in seconds
-        return total_cycle_time
+    if file_path.endswith('.pdf'):
+        content = extract_text_from_pdf(file_path)
     else:
-        return 0  # Return 0 if there are not enough timestamps
+        with open(file_path, 'r') as file:
+            content = file.read()
+    
+    # Example: Calculate processing time based on content length
+    processing_time = len(content)  # Replace with your actual logic
+    return processing_time
 
 @app.route('/process', methods=['POST'])
 def process_files():
@@ -41,15 +44,15 @@ def process_files():
     if "Filename" not in df.columns:
         return jsonify({"error": "The Excel file must contain a 'Filename' column."}), 400
 
-    # Scan files and calculate TOTAL CYCLE TIME
+    # Scan files and calculate processing time
     results = []
     for filename in df["Filename"]:
         file_path = os.path.join(file_directory, filename)
         if os.path.exists(file_path):
-            total_cycle_time = calculate_total_cycle_time(file_path)
-            results.append({"Filename": filename, "Total Cycle Time": total_cycle_time})
+            processing_time = calculate_processing_time(file_path)
+            results.append({"Filename": filename, "Processing Time": processing_time})
         else:
-            results.append({"Filename": filename, "Total Cycle Time": "File not found"})
+            results.append({"Filename": filename, "Processing Time": "File not found"})
 
     # Update the Excel file with the results
     results_df = pd.DataFrame(results)
