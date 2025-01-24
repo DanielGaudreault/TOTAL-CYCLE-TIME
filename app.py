@@ -13,15 +13,12 @@ def extract_text_from_pdf(file):
         text += page.extract_text()
     return text
 
-# Function to extract TOTAL CYCLE TIME from text
-def extract_cycle_time(text):
+# Function to extract the TOTAL CYCLE TIME line from text
+def extract_cycle_time_line(text):
     lines = text.split('\n')
     for line in lines:
         if "TOTAL CYCLE TIME" in line:
-            # Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
-            import re
-            match = re.search(r"(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)", line, re.IGNORECASE)
-            return match.group(0) if match else None
+            return line.strip()  # Return the entire line containing "TOTAL CYCLE TIME"
     return None
 
 @app.route('/process', methods=['POST'])
@@ -40,16 +37,14 @@ def process_files():
     # Create a dictionary to store the results
     results = []
 
-    # Scan uploaded files and extract TOTAL CYCLE TIME
+    # Scan uploaded files and extract the TOTAL CYCLE TIME line
     for file in files_to_scan:
         filename = file.filename
         if filename in df["Filename"].values:
             if filename.endswith('.pdf'):
                 text = extract_text_from_pdf(file)
-            else:
-                text = file.read().decode('utf-8')
-            cycle_time = extract_cycle_time(text)
-            results.append({"Filename": filename, "TOTAL CYCLE TIME": cycle_time if cycle_time else "Not found"})
+                cycle_time_line = extract_cycle_time_line(text)
+                results.append({"Filename": filename, "TOTAL CYCLE TIME": cycle_time_line if cycle_time_line else "Not found"})
 
     # Update the Excel file with the results
     results_df = pd.DataFrame(results)
