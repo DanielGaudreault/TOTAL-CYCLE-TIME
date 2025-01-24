@@ -3,44 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Work Order Scanner</title>
+    <title>Find TOTAL CYCLE TIME</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
-    <h1>Upload Excel File and Scan Directory</h1>
-    <form id="uploadForm">
-        <label for="excelFile">Upload Excel File:</label>
-        <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required>
+    <div class="container">
+        <h1>Find "TOTAL CYCLE TIME" in Files</h1>
+        <input type="file" id="fileInput" accept=".txt,.pdf" multiple>
         <br><br>
-        <label for="fileDirectory">Directory to Scan:</label>
-        <input type="text" id="fileDirectory" name="fileDirectory" placeholder="Enter directory path" required>
-        <br><br>
-        <button type="submit">Process Files</button>
-    </form>
+        <button onclick="uploadFiles()">Upload and Process</button>
+        <h2>Results:</h2>
+        <pre id="results"></pre>
+        <a id="downloadLink" style="display:none;">Download Excel File</a>
+    </div>
 
-    <h2>Results:</h2>
-    <pre id="results"></pre>
-
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = new FormData();
-            formData.append('excelFile', document.getElementById('excelFile').files[0]);
-            formData.append('fileDirectory', document.getElementById('fileDirectory').value);
-
-            const response = await fetch('/process', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await response.json();
-            document.getElementById('results').textContent = JSON.stringify(result, null, 2);
-
-            if (result.outputFile) {
-                alert(`Processing complete! Download the updated file: ${result.outputFile}`);
-                window.location.href = `/download/${result.outputFile}`;
-            }
-        });
-    </script>
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="script.js"></script> <!-- JavaScript file -->
 </body>
 </html>
