@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Excel with PDF</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
+</head>
+<body>
+    <div class="container">
+        <h1>Update Excel with PDF</h1>
+        <div class="form-group">
+            <label for="excel">Upload Excel File:</label>
+            <input type="file" id="excel" accept=".xlsx, .xls">
+        </div>
+        <div class="form-group">
+            <label for="pdf">Upload PDF File:</label>
+            <input type="file" id="pdf" accept=".pdf">
+        </div>
+        <button onclick="processFiles()">Update Excel</button>
+        <div id="results"></div>
+    </div>
+
+    <!-- SheetJS Library for Excel Handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF.js Library for PDF Handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="script.js"></script> <!-- JavaScript file -->
+</body>
+</html>
