@@ -15,10 +15,10 @@ def extract_text_from_pdf(file_path):
             text += page.extract_text()
     return text
 
-# Function to calculate processing time (customize this based on your file structure)
-def calculate_processing_time(file_path):
+# Function to calculate TOTAL-CYCLE-TIME (customize this based on your file structure)
+def calculate_total_cycle_time(file_path, work_order_code):
     """
-    Example: Calculate processing time based on file content.
+    Example: Calculate TOTAL-CYCLE-TIME based on timestamps in the file.
     Replace this logic with your actual calculation.
     """
     if file_path.endswith('.pdf'):
@@ -27,9 +27,19 @@ def calculate_processing_time(file_path):
         with open(file_path, 'r') as file:
             content = file.read()
     
-    # Example: Calculate processing time based on content length
-    processing_time = len(content)  # Replace with your actual logic
-    return processing_time
+    # Example: Extract timestamps for the specific work order code
+    timestamps = []
+    for line in content.splitlines():
+        if work_order_code in line and "Timestamp:" in line:  # Replace with your actual timestamp identifier
+            timestamp_str = line.split("Timestamp:")[1].strip()
+            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")  # Adjust format as needed
+            timestamps.append(timestamp)
+    
+    if len(timestamps) >= 2:
+        total_cycle_time = (timestamps[-1] - timestamps[0]).total_seconds()  # Calculate time difference in seconds
+        return total_cycle_time
+    else:
+        return 0  # Return 0 if there are not enough timestamps
 
 @app.route('/process', methods=['POST'])
 def process_files():
@@ -40,23 +50,25 @@ def process_files():
     # Read the Excel file
     df = pd.read_excel(excel_file)
 
-    # Ensure the Excel file has a column named "Filename" (or adjust as needed)
-    if "Filename" not in df.columns:
-        return jsonify({"error": "The Excel file must contain a 'Filename' column."}), 400
+    # Ensure the Excel file has a column named "WorkOrderCode" (or adjust as needed)
+    if "WorkOrderCode" not in df.columns:
+        return jsonify({"error": "The Excel file must contain a 'WorkOrderCode' column."}), 400
 
-    # Scan files and calculate processing time
+    # Scan files and calculate TOTAL-CYCLE-TIME for each work order
     results = []
-    for filename in df["Filename"]:
-        file_path = os.path.join(file_directory, filename)
-        if os.path.exists(file_path):
-            processing_time = calculate_processing_time(file_path)
-            results.append({"Filename": filename, "Processing Time": processing_time})
-        else:
-            results.append({"Filename": filename, "Processing Time": "File not found"})
+    for work_order_code in df["WorkOrderCode"]:
+        total_cycle_time = 0
+        for root, _, files in os.walk(file_directory):
+            for filename in files:
+                file_path = os.path.join(root, filename)
+                if work_order_code in filename or work_order_code in extract_text_from_pdf(file_path):
+                    total_cycle_time += calculate_total_cycle_time(file_path, work_order_code)
+        
+        results.append({"WorkOrderCode": work_order_code, "TotalCycleTime": total_cycle_time})
 
     # Update the Excel file with the results
     results_df = pd.DataFrame(results)
-    df = df.merge(results_df, on="Filename", how="left")
+    df = df.merge(results_df, on="WorkOrderCode", how="left")
 
     # Save the updated Excel file
     output_file = "updated_output.xlsx"
