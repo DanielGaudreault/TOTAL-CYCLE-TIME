@@ -1,82 +1,58 @@
 from flask import Flask, request, jsonify, send_from_directory
 import pandas as pd
+import PyPDF2
 import os
-from datetime import datetime
-import PyPDF2  # For PDF processing
+from io import BytesIO
 
 app = Flask(__name__)
 
 # Function to extract text from a PDF file
-def extract_text_from_pdf(file_path):
-    with open(file_path, 'rb') as file:
-        reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
+def extract_text_from_pdf(file):
+    reader = PyPDF2.PdfReader(file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
     return text
 
-# Function to calculate TOTAL-CYCLE-TIME (customize this based on your file structure)
-def calculate_total_cycle_time(file_path, work_order_code):
-    """
-    Example: Calculate TOTAL-CYCLE-TIME based on timestamps in the file.
-    Replace this logic with your actual calculation.
-    """
-    if file_path.endswith('.pdf'):
-        content = extract_text_from_pdf(file_path)
-    else:
-        with open(file_path, 'r') as file:
-            content = file.read()
-    
-    # Example: Extract timestamps for the specific work order code
-    timestamps = []
-    for line in content.splitlines():
-        if work_order_code in line and "Timestamp:" in line:  # Replace with your actual timestamp identifier
-            timestamp_str = line.split("Timestamp:")[1].strip()
-            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")  # Adjust format as needed
-            timestamps.append(timestamp)
-    
-    if len(timestamps) >= 2:
-        total_cycle_time = (timestamps[-1] - timestamps[0]).total_seconds()  # Calculate time difference in seconds
-        return total_cycle_time
-    else:
-        return 0  # Return 0 if there are not enough timestamps
+# Function to extract "TOTAL CYCLE TIME" from text
+def extract_cycle_time(text):
+    lines = text.split('\n')
+    for line in lines:
+        if "TOTAL CYCLE TIME" in line:
+            # Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
+            import re
+            match = re.search(r"(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)", line, re.IGNORECASE)
+            return match.group(0) if match else None
+    return None
 
 @app.route('/process', methods=['POST'])
 def process_files():
-    # Get uploaded Excel file and directory path
-    excel_file = request.files['excelFile']
-    file_directory = request.form['fileDirectory']
+    if 'files' not in request.files:
+        return jsonify({"error": "No files uploaded."}), 400
 
-    # Read the Excel file
-    df = pd.read_excel(excel_file)
-
-    # Ensure the Excel file has a column named "WorkOrderCode" (or adjust as needed)
-    if "WorkOrderCode" not in df.columns:
-        return jsonify({"error": "The Excel file must contain a 'WorkOrderCode' column."}), 400
-
-    # Scan files and calculate TOTAL-CYCLE-TIME for each work order
+    files = request.files.getlist('files')
     results = []
-    for work_order_code in df["WorkOrderCode"]:
-        total_cycle_time = 0
-        for root, _, files in os.walk(file_directory):
-            for filename in files:
-                file_path = os.path.join(root, filename)
-                if work_order_code in filename or work_order_code in extract_text_from_pdf(file_path):
-                    total_cycle_time += calculate_total_cycle_time(file_path, work_order_code)
-        
-        results.append({"WorkOrderCode": work_order_code, "TotalCycleTime": total_cycle_time})
 
-    # Update the Excel file with the results
-    results_df = pd.DataFrame(results)
-    df = df.merge(results_df, on="WorkOrderCode", how="left")
+    for file in files:
+        if file.filename.endswith('.pdf'):
+            text = extract_text_from_pdf(file)
+        else:
+            text = file.read().decode('utf-8')
 
-    # Save the updated Excel file
-    output_file = "updated_output.xlsx"
+        cycle_time = extract_cycle_time(text)
+        results.append({
+            "Filename": file.filename,
+            "TOTAL CYCLE TIME": cycle_time if cycle_time else "Not found"
+        })
+
+    # Save results to an Excel file
+    df = pd.DataFrame(results)
+    output_file = "results.xlsx"
     df.to_excel(output_file, index=False)
 
     return jsonify({
-        "message": "Processing complete!",
-        "outputFile": output_file,
+        "results": results,
+        "outputFile": output_file
     })
 
 @app.route('/download/<filename>', methods=['GET'])
