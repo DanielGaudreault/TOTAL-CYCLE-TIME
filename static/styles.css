@@ -14,7 +14,7 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 300px;
+    width: 400px;
     text-align: center;
 }
 
@@ -23,22 +23,26 @@ h1 {
     font-size: 24px;
 }
 
-.form-group {
-    margin-bottom: 15px;
-    text-align: left;
+.upload-area {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    cursor: pointer;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+.upload-area.dragover {
+    border-color: #28a745;
+    background-color: #f0fff4;
 }
 
-input[type="file"] {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+.upload-area p {
+    margin: 0;
+    color: #666;
+}
+
+#file-input {
+    display: none;
 }
 
 button {
@@ -53,4 +57,14 @@ button {
 
 button:hover {
     background-color: #218838;
+}
+
+#file-list {
+    margin-top: 20px;
+    text-align: left;
+}
+
+#file-list p {
+    margin: 5px 0;
+    color: #333;
 }
