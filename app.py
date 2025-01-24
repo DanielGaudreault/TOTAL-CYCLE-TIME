@@ -1,67 +1,60 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, render_template, send_file
 import pandas as pd
-import PyPDF2
-from io import BytesIO
+from PyPDF2 import PdfReader
+import os
 
 app = Flask(__name__)
 
-# Function to extract text from a PDF file
-def extract_text_from_pdf(file):
-    reader = PyPDF2.PdfReader(file)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-    return text
+# Ensure the uploads directory exists
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-# Function to extract the TOTAL CYCLE TIME line from text
-def extract_cycle_time_line(text):
-    lines = text.split('\n')
-    for line in lines:
-        if "TOTAL CYCLE TIME" in line:
-            return line.strip()  # Return the entire line containing "TOTAL CYCLE TIME"
-    return None
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-@app.route('/process', methods=['POST'])
-def process_files():
-    # Get uploaded Excel file and files to scan
-    excel_file = request.files['excelFile']
-    files_to_scan = request.files.getlist('filesToScan')
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
 
-    # Read the Excel file
-    df = pd.read_excel(excel_file)
+@app.route('/upload', methods=['POST'])
+def upload_files():
+    # Check if files are uploaded
+    if 'excel' not in request.files or 'pdf' not in request.files:
+        return "Please upload both Excel and PDF files."
 
-    # Ensure the Excel file has a column named "Filename" (or adjust as needed)
-    if "Filename" not in df.columns:
-        return jsonify({"error": "The Excel file must contain a 'Filename' column."}), 400
+    excel_file = request.files['excel']
+    pdf_file = request.files['pdf']
 
-    # Create a dictionary to store the results
-    results = []
+    # Save files temporarily
+    excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
+    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
+    excel_file.save(excel_path)
+    pdf_file.save(pdf_path)
 
-    # Scan uploaded files and extract the TOTAL CYCLE TIME line
-    for file in files_to_scan:
-        filename = file.filename
-        if filename in df["Filename"].values:
-            if filename.endswith('.pdf'):
-                text = extract_text_from_pdf(file)
-                cycle_time_line = extract_cycle_time_line(text)
-                results.append({"Filename": filename, "TOTAL CYCLE TIME": cycle_time_line if cycle_time_line else "Not found"})
+    # Read Excel file
+    try:
+        df = pd.read_excel(excel_path)
+    except Exception as e:
+        return f"Error reading Excel file: {e}"
 
-    # Update the Excel file with the results
-    results_df = pd.DataFrame(results)
-    df = df.merge(results_df, on="Filename", how="left")
+    # Read PDF file
+    try:
+        pdf_reader = PdfReader(pdf_path)
+        pdf_text = ""
+        for page in pdf_reader.pages:
+            pdf_text += page.extract_text()
+    except Exception as e:
+        return f"Error reading PDF file: {e}"
 
-    # Save the updated Excel file
-    output_file = "updated_output.xlsx"
-    df.to_excel(output_file, index=False)
+    # Update Excel file with PDF text
+    df['PDF_Text'] = pdf_text  # Add a new column with PDF text
 
-    return jsonify({
-        "message": "Processing complete!",
-        "outputFile": output_file,
-    })
+    # Save updated Excel file
+    updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
+    df.to_excel(updated_excel_path, index=False)
 
-@app.route('/download/<filename>', methods=['GET'])
-def download_file(filename):
-    return send_from_directory('.', filename, as_attachment=True)
+    # Provide download link
+    return send_file(updated_excel_path, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
