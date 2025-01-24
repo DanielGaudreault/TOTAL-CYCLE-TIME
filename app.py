@@ -1,20 +1,20 @@
 from flask import Flask, request, jsonify, send_from_directory
 import pandas as pd
-import PyPDF2
 import os
-from io import BytesIO
+import PyPDF2
 
 app = Flask(__name__)
 
 # Function to extract text from a PDF file
-def extract_text_from_pdf(file):
-    reader = PyPDF2.PdfReader(file)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
+def extract_text_from_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
     return text
 
-# Function to extract "TOTAL CYCLE TIME" from text
+# Function to extract TOTAL CYCLE TIME from text
 def extract_cycle_time(text):
     lines = text.split('\n')
     for line in lines:
@@ -27,32 +27,43 @@ def extract_cycle_time(text):
 
 @app.route('/process', methods=['POST'])
 def process_files():
-    if 'files' not in request.files:
-        return jsonify({"error": "No files uploaded."}), 400
+    # Get uploaded Excel file and directory path
+    excel_file = request.files['excelFile']
+    file_directory = request.form['fileDirectory']
 
-    files = request.files.getlist('files')
+    # Read the Excel file
+    df = pd.read_excel(excel_file)
+
+    # Ensure the Excel file has a column named "Filename" (or adjust as needed)
+    if "Filename" not in df.columns:
+        return jsonify({"error": "The Excel file must contain a 'Filename' column."}), 400
+
+    # Scan files and extract TOTAL CYCLE TIME
     results = []
-
-    for file in files:
-        if file.filename.endswith('.pdf'):
-            text = extract_text_from_pdf(file)
+    for filename in df["Filename"]:
+        file_path = os.path.join(file_directory, filename)
+        if os.path.exists(file_path):
+            if file_path.endswith('.pdf'):
+                text = extract_text_from_pdf(file_path)
+            else:
+                with open(file_path, 'r') as file:
+                    text = file.read()
+            cycle_time = extract_cycle_time(text)
+            results.append({"Filename": filename, "TOTAL CYCLE TIME": cycle_time if cycle_time else "Not found"})
         else:
-            text = file.read().decode('utf-8')
+            results.append({"Filename": filename, "TOTAL CYCLE TIME": "File not found"})
 
-        cycle_time = extract_cycle_time(text)
-        results.append({
-            "Filename": file.filename,
-            "TOTAL CYCLE TIME": cycle_time if cycle_time else "Not found"
-        })
+    # Update the Excel file with the results
+    results_df = pd.DataFrame(results)
+    df = df.merge(results_df, on="Filename", how="left")
 
-    # Save results to an Excel file
-    df = pd.DataFrame(results)
-    output_file = "results.xlsx"
+    # Save the updated Excel file
+    output_file = "updated_output.xlsx"
     df.to_excel(output_file, index=False)
 
     return jsonify({
-        "results": results,
-        "outputFile": output_file
+        "message": "Processing complete!",
+        "outputFile": output_file,
     })
 
 @app.route('/download/<filename>', methods=['GET'])
