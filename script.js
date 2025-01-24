@@ -13,6 +13,14 @@ function processFiles() {
     pdfReader.onload = function (event) {
         const pdfData = new Uint8Array(event.target.result);
         parsePDF(pdfData).then(pdfText => {
+            // Extract TOTAL CYCLE TIME from PDF text
+            const cycleTime = extractCycleTime(pdfText);
+
+            if (!cycleTime) {
+                results.innerHTML = '<p>No "TOTAL CYCLE TIME" found in the PDF.</p>';
+                return;
+            }
+
             // Read Excel file
             const excelReader = new FileReader();
             excelReader.onload = function (event) {
@@ -24,10 +32,10 @@ function processFiles() {
                 // Convert Excel sheet to JSON
                 const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // Add PDF text as a new column
-                json[0].push('PDF_Text'); // Add header
+                // Add TOTAL CYCLE TIME as a new column
+                json[0].push('TOTAL CYCLE TIME'); // Add header
                 for (let i = 1; i < json.length; i++) {
-                    json[i].push(pdfText); // Add PDF text to each row
+                    json[i].push(cycleTime); // Add cycle time to each row
                 }
 
                 // Convert JSON back to Excel
@@ -37,12 +45,19 @@ function processFiles() {
 
                 // Download the updated Excel file
                 XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                results.innerHTML = '<p>Excel file updated successfully! Download started.</p>';
+                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added: ${cycleTime}</p>`;
             };
             excelReader.readAsArrayBuffer(excelFile);
         });
     };
     pdfReader.readAsArrayBuffer(pdfFile);
+}
+
+function extractCycleTime(text) {
+    // Use regex to find "TOTAL CYCLE TIME" and extract the time
+    const regex = /TOTAL CYCLE TIME\s*:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)/i;
+    const match = text.match(regex);
+    return match ? match[1] : null; // Return the matched time or null
 }
 
 function parsePDF(data) {
