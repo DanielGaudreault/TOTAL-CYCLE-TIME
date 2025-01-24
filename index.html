@@ -8,13 +8,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Upload Excel File and Scan Directory</h1>
+        <h1>Upload Excel File and Files to Scan</h1>
         <form id="uploadForm">
             <label for="excelFile">Upload Excel File:</label>
             <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required>
             <br><br>
-            <label for="fileDirectory">Directory to Scan:</label>
-            <input type="text" id="fileDirectory" name="fileDirectory" placeholder="Enter directory path" required>
+            <label for="filesToScan">Upload Files to Scan (PDFs):</label>
+            <input type="file" id="filesToScan" name="filesToScan" accept=".pdf" multiple required>
             <br><br>
             <button type="submit">Process Files</button>
         </form>
@@ -30,7 +30,11 @@
 
             const formData = new FormData();
             formData.append('excelFile', document.getElementById('excelFile').files[0]);
-            formData.append('fileDirectory', document.getElementById('fileDirectory').value);
+
+            const filesToScan = document.getElementById('filesToScan').files;
+            for (const file of filesToScan) {
+                formData.append('filesToScan', file);
+            }
 
             const response = await fetch('/process', {
                 method: 'POST',
