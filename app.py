@@ -58,13 +58,13 @@ def upload_files():
         except Exception as e:
             return f"Error reading PDF file: {e}"
 
-        # Extract Project Name and TOTAL CYCLE TIME from PDF text
-        project_name = extract_project_name(pdf_text)
+        # Extract Item Number and TOTAL CYCLE TIME from PDF text
+        item_number = extract_item_number(pdf_text)
         cycle_time = extract_cycle_time(pdf_text)
 
-        if project_name and cycle_time:
-            # Match project name with the "Item Number" column in Excel
-            matching_row = df['Item Number'] == project_name
+        if item_number and cycle_time:
+            # Match item number with the "Item Number" column in Excel
+            matching_row = df['Item Number'] == item_number
 
             if matching_row.any():
                 # Update the "TOTAL CYCLE TIME" column for the matching row
@@ -72,7 +72,7 @@ def upload_files():
             else:
                 print(f"No matching item number found for PDF file: {pdf_file.filename}")
         else:
-            print(f"Could not extract project name or cycle time from PDF file: {pdf_file.filename}")
+            print(f"Could not extract item number or cycle time from PDF file: {pdf_file.filename}")
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
@@ -81,9 +81,9 @@ def upload_files():
     # Provide download link
     return send_file(updated_excel_path, as_attachment=True)
 
-def extract_project_name(text):
-    # Use regex to find the project name in the PDF text
-    regex = r"Project Name\s*:\s*([\w\s-]+)"
+def extract_item_number(text):
+    # Use regex to find the item number in the PDF text
+    regex = r"Item Number\s*:\s*([\w\s-]+)"
     match = re.search(regex, text, re.IGNORECASE)
     return match.group(1).strip() if match else None
 
