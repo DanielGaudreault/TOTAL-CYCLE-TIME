@@ -61,16 +61,16 @@ function processFiles() {
             pdfReader.onload = function (event) {
                 const pdfData = new Uint8Array(event.target.result);
                 parsePDF(pdfData).then(pdfText => {
-                    // Extract Project Name and TOTAL CYCLE TIME from PDF text
-                    const projectName = extractProjectName(pdfText);
+                    // Extract Item Number and TOTAL CYCLE TIME from PDF text
+                    const itemNumber = extractItemNumber(pdfText);
                     const cycleTime = extractCycleTime(pdfText);
 
-                    if (projectName && cycleTime) {
-                        // Find the row in the Excel file that matches the project name with the item number
+                    if (itemNumber && cycleTime) {
+                        // Find the row in the Excel file that matches the item number
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
-                            if (json[i][itemNumberColumnIndex] === projectName) {
+                            if (json[i][itemNumberColumnIndex] === itemNumber) {
                                 // Update the "TOTAL CYCLE TIME" column for this row
                                 if (cycleTimeColumnIndex === -1) {
                                     json[i].push(cycleTime); // Add to new column
@@ -86,7 +86,7 @@ function processFiles() {
                             console.warn(`No matching item number found for PDF file: ${pdfFile.name}`);
                         }
                     } else {
-                        console.warn(`Could not extract project name or cycle time from PDF file: ${pdfFile.name}`);
+                        console.warn(`Could not extract item number or cycle time from PDF file: ${pdfFile.name}`);
                     }
 
                     processedCount++;
@@ -102,11 +102,11 @@ function processFiles() {
     excelReader.readAsArrayBuffer(excelFile);
 }
 
-function extractProjectName(text) {
-    // Use regex to find the project name in the PDF text
-    const regex = /Project Name\s*:\s*([\w\s-]+)/i;
+function extractItemNumber(text) {
+    // Use regex to find the item number in the PDF text
+    const regex = /Item Number\s*:\s*([\w\s-]+)/i;
     const match = text.match(regex);
-    return match ? match[1].trim() : null; // Return the matched project name or null
+    return match ? match[1].trim() : null; // Return the matched item number or null
 }
 
 function extractCycleTime(text) {
