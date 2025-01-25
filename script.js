@@ -50,6 +50,13 @@ function processFiles() {
             }
 
             const pdfFile = pdfFiles[index];
+            if (!pdfFile.name.endsWith('.pdf')) {
+                // Skip non-PDF files
+                processedCount++;
+                processNextPdf(index + 1);
+                return;
+            }
+
             const pdfReader = new FileReader();
             pdfReader.onload = function (event) {
                 const pdfData = new Uint8Array(event.target.result);
@@ -83,7 +90,7 @@ function processFiles() {
                     }
 
                     processedCount++;
-                    results.innerHTML = `<p>Processed ${processedCount} of ${pdfFiles.length} PDF files...</p>`;
+                    results.innerHTML = `<p>Processed ${processedCount} of ${pdfFiles.length} files...</p>`;
                     processNextPdf(index + 1); // Process the next PDF
                 });
             };
