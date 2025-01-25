@@ -24,8 +24,22 @@ function processFiles() {
 
         // Process each PDF file
         let processedCount = 0;
-        for (let i = 0; i < pdfFiles.length; i++) {
-            const pdfFile = pdfFiles[i];
+        results.innerHTML = `<p>Processing ${pdfFiles.length} PDF files... Please wait.</p>`;
+
+        const processNextPdf = (index) => {
+            if (index >= pdfFiles.length) {
+                // All PDFs processed, update Excel
+                const updatedWorksheet = XLSX.utils.aoa_to_sheet(json);
+                const updatedWorkbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(updatedWorkbook, updatedWorksheet, 'Sheet1');
+
+                // Download the updated Excel file
+                XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
+                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added from ${pdfFiles.length} PDF(s).</p>`;
+                return;
+            }
+
+            const pdfFile = pdfFiles[index];
             const pdfReader = new FileReader();
             pdfReader.onload = function (event) {
                 const pdfData = new Uint8Array(event.target.result);
@@ -41,20 +55,14 @@ function processFiles() {
                     }
 
                     processedCount++;
-                    if (processedCount === pdfFiles.length) {
-                        // Convert JSON back to Excel
-                        const updatedWorksheet = XLSX.utils.aoa_to_sheet(json);
-                        const updatedWorkbook = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(updatedWorkbook, updatedWorksheet, 'Sheet1');
-
-                        // Download the updated Excel file
-                        XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                        results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added from ${pdfFiles.length} PDF(s).</p>`;
-                    }
+                    results.innerHTML = `<p>Processed ${processedCount} of ${pdfFiles.length} PDF files...</p>`;
+                    processNextPdf(index + 1); // Process the next PDF
                 });
             };
             pdfReader.readAsArrayBuffer(pdfFile);
-        }
+        };
+
+        processNextPdf(0); // Start processing the first PDF
     };
     excelReader.readAsArrayBuffer(excelFile);
 }
