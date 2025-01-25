@@ -19,8 +19,18 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Add TOTAL CYCLE TIME as a new column
-        json[0].push('TOTAL CYCLE TIME'); // Add header
+        // Find the index of the "File Name" column
+        const fileNameColumnIndex = json[0].indexOf('File Name');
+        if (fileNameColumnIndex === -1) {
+            results.innerHTML = '<p>Excel file must have a "File Name" column.</p>';
+            return;
+        }
+
+        // Add "TOTAL CYCLE TIME" as a new column if it doesn't exist
+        const cycleTimeColumnIndex = json[0].indexOf('TOTAL CYCLE TIME');
+        if (cycleTimeColumnIndex === -1) {
+            json[0].push('TOTAL CYCLE TIME'); // Add header
+        }
 
         // Process each PDF file
         let processedCount = 0;
@@ -35,7 +45,7 @@ function processFiles() {
 
                 // Download the updated Excel file
                 XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added from ${pdfFiles.length} PDF(s).</p>`;
+                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added for ${pdfFiles.length} PDF(s).</p>`;
                 return;
             }
 
@@ -48,9 +58,25 @@ function processFiles() {
                     const cycleTime = extractCycleTime(pdfText);
 
                     if (cycleTime) {
-                        // Add cycle time to each row
-                        for (let j = 1; j < json.length; j++) {
-                            json[j].push(cycleTime);
+                        // Find the row in the Excel file that matches the PDF file name
+                        const pdfFileName = pdfFile.name.replace('.pdf', ''); // Remove .pdf extension
+                        let rowUpdated = false;
+
+                        for (let i = 1; i < json.length; i++) {
+                            if (json[i][fileNameColumnIndex] === pdfFileName) {
+                                // Update the "TOTAL CYCLE TIME" column for this row
+                                if (cycleTimeColumnIndex === -1) {
+                                    json[i].push(cycleTime); // Add to new column
+                                } else {
+                                    json[i][cycleTimeColumnIndex] = cycleTime; // Update existing column
+                                }
+                                rowUpdated = true;
+                                break;
+                            }
+                        }
+
+                        if (!rowUpdated) {
+                            console.warn(`No matching row found for PDF file: ${pdfFileName}`);
                         }
                     }
 
