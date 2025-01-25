@@ -36,9 +36,9 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
-    # Ensure the Excel file has a "Project Name" column
-    if 'Project Name' not in df.columns:
-        return "Excel file must have a 'Project Name' column."
+    # Ensure the Excel file has an "Item Number" column
+    if 'Item Number' not in df.columns:
+        return "Excel file must have an 'Item Number' column."
 
     # Add "TOTAL CYCLE TIME" column if it doesn't exist
     if 'TOTAL CYCLE TIME' not in df.columns:
@@ -63,14 +63,14 @@ def upload_files():
         cycle_time = extract_cycle_time(pdf_text)
 
         if project_name and cycle_time:
-            # Match project name with the "Project Name" column in Excel
-            matching_row = df['Project Name'] == project_name
+            # Match project name with the "Item Number" column in Excel
+            matching_row = df['Item Number'] == project_name
 
             if matching_row.any():
                 # Update the "TOTAL CYCLE TIME" column for the matching row
                 df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time
             else:
-                print(f"No matching project name found for PDF file: {pdf_file.filename}")
+                print(f"No matching item number found for PDF file: {pdf_file.filename}")
         else:
             print(f"Could not extract project name or cycle time from PDF file: {pdf_file.filename}")
 
