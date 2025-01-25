@@ -34,7 +34,7 @@ function processFiles() {
 
         // Process each PDF file
         let processedCount = 0;
-        results.innerHTML = `<p>Processing ${pdfFiles.length} PDF files... Please wait.</p>`;
+        results.innerHTML = `<p>Processing ${pdfFiles.length} files... Please wait.</p>`;
 
         const processNextPdf = (index) => {
             if (index >= pdfFiles.length) {
@@ -45,7 +45,7 @@ function processFiles() {
 
                 // Download the updated Excel file
                 XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added for ${pdfFiles.length} PDF(s).</p>`;
+                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added for ${processedCount} PDF(s).</p>`;
                 return;
             }
 
