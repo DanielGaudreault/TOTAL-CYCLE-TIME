@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, send_file
 import pandas as pd
 from PyPDF2 import PdfReader
 import os
+import re
 
 app = Flask(__name__)
 
@@ -35,9 +36,9 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
-    # Ensure the Excel file has a "File Name" column
-    if 'File Name' not in df.columns:
-        return "Excel file must have a 'File Name' column."
+    # Ensure the Excel file has a "Project Name" column
+    if 'Project Name' not in df.columns:
+        return "Excel file must have a 'Project Name' column."
 
     # Add "TOTAL CYCLE TIME" column if it doesn't exist
     if 'TOTAL CYCLE TIME' not in df.columns:
@@ -57,19 +58,21 @@ def upload_files():
         except Exception as e:
             return f"Error reading PDF file: {e}"
 
-        # Extract TOTAL CYCLE TIME from PDF text
+        # Extract Project Name and TOTAL CYCLE TIME from PDF text
+        project_name = extract_project_name(pdf_text)
         cycle_time = extract_cycle_time(pdf_text)
 
-        if cycle_time:
-            # Match PDF file name with the "File Name" column in Excel
-            pdf_file_name = pdf_file.filename.replace('.pdf', '')
-            matching_row = df['File Name'] == pdf_file_name
+        if project_name and cycle_time:
+            # Match project name with the "Project Name" column in Excel
+            matching_row = df['Project Name'] == project_name
 
             if matching_row.any():
                 # Update the "TOTAL CYCLE TIME" column for the matching row
                 df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time
             else:
-                print(f"No matching row found for PDF file: {pdf_file_name}")
+                print(f"No matching project name found for PDF file: {pdf_file.filename}")
+        else:
+            print(f"Could not extract project name or cycle time from PDF file: {pdf_file.filename}")
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
@@ -78,9 +81,14 @@ def upload_files():
     # Provide download link
     return send_file(updated_excel_path, as_attachment=True)
 
+def extract_project_name(text):
+    # Use regex to find the project name in the PDF text
+    regex = r"Project Name\s*:\s*([\w\s-]+)"
+    match = re.search(regex, text, re.IGNORECASE)
+    return match.group(1).strip() if match else None
+
 def extract_cycle_time(text):
     # Use regex to find "TOTAL CYCLE TIME" and extract the time
-    import re
     regex = r"TOTAL CYCLE TIME\s*:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)"
     match = re.search(regex, text, re.IGNORECASE)
     return match.group(1) if match else None
