@@ -19,10 +19,10 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Find the index of the "File Name" column
-        const fileNameColumnIndex = json[0].indexOf('File Name');
-        if (fileNameColumnIndex === -1) {
-            results.innerHTML = '<p>Excel file must have a "File Name" column.</p>';
+        // Find the index of the "Project Name" column
+        const projectNameColumnIndex = json[0].indexOf('Project Name');
+        if (projectNameColumnIndex === -1) {
+            results.innerHTML = '<p>Excel file must have a "Project Name" column.</p>';
             return;
         }
 
@@ -54,16 +54,16 @@ function processFiles() {
             pdfReader.onload = function (event) {
                 const pdfData = new Uint8Array(event.target.result);
                 parsePDF(pdfData).then(pdfText => {
-                    // Extract TOTAL CYCLE TIME from PDF text
+                    // Extract Project Name and TOTAL CYCLE TIME from PDF text
+                    const projectName = extractProjectName(pdfText);
                     const cycleTime = extractCycleTime(pdfText);
 
-                    if (cycleTime) {
-                        // Find the row in the Excel file that matches the PDF file name
-                        const pdfFileName = pdfFile.name.replace('.pdf', ''); // Remove .pdf extension
+                    if (projectName && cycleTime) {
+                        // Find the row in the Excel file that matches the project name
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
-                            if (json[i][fileNameColumnIndex] === pdfFileName) {
+                            if (json[i][projectNameColumnIndex] === projectName) {
                                 // Update the "TOTAL CYCLE TIME" column for this row
                                 if (cycleTimeColumnIndex === -1) {
                                     json[i].push(cycleTime); // Add to new column
@@ -76,8 +76,10 @@ function processFiles() {
                         }
 
                         if (!rowUpdated) {
-                            console.warn(`No matching row found for PDF file: ${pdfFileName}`);
+                            console.warn(`No matching project name found for PDF file: ${pdfFile.name}`);
                         }
+                    } else {
+                        console.warn(`Could not extract project name or cycle time from PDF file: ${pdfFile.name}`);
                     }
 
                     processedCount++;
@@ -91,6 +93,13 @@ function processFiles() {
         processNextPdf(0); // Start processing the first PDF
     };
     excelReader.readAsArrayBuffer(excelFile);
+}
+
+function extractProjectName(text) {
+    // Use regex to find the project name in the PDF text
+    const regex = /Project Name\s*:\s*([\w\s-]+)/i;
+    const match = text.match(regex);
+    return match ? match[1].trim() : null; // Return the matched project name or null
 }
 
 function extractCycleTime(text) {
