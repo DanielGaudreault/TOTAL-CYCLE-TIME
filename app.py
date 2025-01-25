@@ -23,13 +23,11 @@ def upload_files():
         return "Please upload both Excel and PDF files."
 
     excel_file = request.files['excel']
-    pdf_file = request.files['pdf']
+    pdf_files = request.files.getlist('pdf')
 
     # Save files temporarily
     excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
-    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
     excel_file.save(excel_path)
-    pdf_file.save(pdf_path)
 
     # Read Excel file
     try:
@@ -37,17 +35,22 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
-    # Read PDF file
-    try:
-        pdf_reader = PdfReader(pdf_path)
-        pdf_text = ""
-        for page in pdf_reader.pages:
-            pdf_text += page.extract_text()
-    except Exception as e:
-        return f"Error reading PDF file: {e}"
+    # Process each PDF file
+    for pdf_file in pdf_files:
+        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
+        pdf_file.save(pdf_path)
 
-    # Update Excel file with PDF text
-    df['PDF_Text'] = pdf_text  # Add a new column with PDF text
+        # Read PDF file
+        try:
+            pdf_reader = PdfReader(pdf_path)
+            pdf_text = ""
+            for page in pdf_reader.pages:
+                pdf_text += page.extract_text()
+        except Exception as e:
+            return f"Error reading PDF file: {e}"
+
+        # Update Excel file with PDF text
+        df['PDF_Text'] = pdf_text  # Add a new column with PDF text
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
