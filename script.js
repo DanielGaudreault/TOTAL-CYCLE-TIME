@@ -1,56 +1,62 @@
 function processFiles() {
     const excelFile = document.getElementById('excel').files[0];
-    const pdfFile = document.getElementById('pdf').files[0];
+    const pdfFiles = document.getElementById('pdf').files;
     const results = document.getElementById('results');
 
-    if (!excelFile || !pdfFile) {
+    if (!excelFile || pdfFiles.length === 0) {
         results.innerHTML = '<p>Please upload both Excel and PDF files.</p>';
         return;
     }
 
-    // Read PDF file
-    const pdfReader = new FileReader();
-    pdfReader.onload = function (event) {
-        const pdfData = new Uint8Array(event.target.result);
-        parsePDF(pdfData).then(pdfText => {
-            // Extract TOTAL CYCLE TIME from PDF text
-            const cycleTime = extractCycleTime(pdfText);
+    // Read Excel file
+    const excelReader = new FileReader();
+    excelReader.onload = function (event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
 
-            if (!cycleTime) {
-                results.innerHTML = '<p>No "TOTAL CYCLE TIME" found in the PDF.</p>';
-                return;
-            }
+        // Convert Excel sheet to JSON
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-            // Read Excel file
-            const excelReader = new FileReader();
-            excelReader.onload = function (event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+        // Add TOTAL CYCLE TIME as a new column
+        json[0].push('TOTAL CYCLE TIME'); // Add header
 
-                // Convert Excel sheet to JSON
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        // Process each PDF file
+        let processedCount = 0;
+        for (let i = 0; i < pdfFiles.length; i++) {
+            const pdfFile = pdfFiles[i];
+            const pdfReader = new FileReader();
+            pdfReader.onload = function (event) {
+                const pdfData = new Uint8Array(event.target.result);
+                parsePDF(pdfData).then(pdfText => {
+                    // Extract TOTAL CYCLE TIME from PDF text
+                    const cycleTime = extractCycleTime(pdfText);
 
-                // Add TOTAL CYCLE TIME as a new column
-                json[0].push('TOTAL CYCLE TIME'); // Add header
-                for (let i = 1; i < json.length; i++) {
-                    json[i].push(cycleTime); // Add cycle time to each row
-                }
+                    if (cycleTime) {
+                        // Add cycle time to each row
+                        for (let j = 1; j < json.length; j++) {
+                            json[j].push(cycleTime);
+                        }
+                    }
 
-                // Convert JSON back to Excel
-                const updatedWorksheet = XLSX.utils.aoa_to_sheet(json);
-                const updatedWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(updatedWorkbook, updatedWorksheet, 'Sheet1');
+                    processedCount++;
+                    if (processedCount === pdfFiles.length) {
+                        // Convert JSON back to Excel
+                        const updatedWorksheet = XLSX.utils.aoa_to_sheet(json);
+                        const updatedWorkbook = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(updatedWorkbook, updatedWorksheet, 'Sheet1');
 
-                // Download the updated Excel file
-                XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added: ${cycleTime}</p>`;
+                        // Download the updated Excel file
+                        XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
+                        results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added from ${pdfFiles.length} PDF(s).</p>`;
+                    }
+                });
             };
-            excelReader.readAsArrayBuffer(excelFile);
-        });
+            pdfReader.readAsArrayBuffer(pdfFile);
+        }
     };
-    pdfReader.readAsArrayBuffer(pdfFile);
+    excelReader.readAsArrayBuffer(excelFile);
 }
 
 function extractCycleTime(text) {
