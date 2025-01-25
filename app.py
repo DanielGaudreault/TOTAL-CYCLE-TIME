@@ -35,6 +35,14 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
+    # Ensure the Excel file has a "File Name" column
+    if 'File Name' not in df.columns:
+        return "Excel file must have a 'File Name' column."
+
+    # Add "TOTAL CYCLE TIME" column if it doesn't exist
+    if 'TOTAL CYCLE TIME' not in df.columns:
+        df['TOTAL CYCLE TIME'] = ''
+
     # Process each PDF file
     for pdf_file in pdf_files:
         pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
@@ -49,8 +57,19 @@ def upload_files():
         except Exception as e:
             return f"Error reading PDF file: {e}"
 
-        # Update Excel file with PDF text
-        df['PDF_Text'] = pdf_text  # Add a new column with PDF text
+        # Extract TOTAL CYCLE TIME from PDF text
+        cycle_time = extract_cycle_time(pdf_text)
+
+        if cycle_time:
+            # Match PDF file name with the "File Name" column in Excel
+            pdf_file_name = pdf_file.filename.replace('.pdf', '')
+            matching_row = df['File Name'] == pdf_file_name
+
+            if matching_row.any():
+                # Update the "TOTAL CYCLE TIME" column for the matching row
+                df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time
+            else:
+                print(f"No matching row found for PDF file: {pdf_file_name}")
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
@@ -58,6 +77,13 @@ def upload_files():
 
     # Provide download link
     return send_file(updated_excel_path, as_attachment=True)
+
+def extract_cycle_time(text):
+    # Use regex to find "TOTAL CYCLE TIME" and extract the time
+    import re
+    regex = r"TOTAL CYCLE TIME\s*:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)"
+    match = re.search(regex, text, re.IGNORECASE)
+    return match.group(1) if match else None
 
 if __name__ == '__main__':
     app.run(debug=True)
