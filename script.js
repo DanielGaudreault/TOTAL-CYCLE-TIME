@@ -19,10 +19,10 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Find the index of the "Project Name" column
-        const projectNameColumnIndex = json[0].indexOf('Project Name');
-        if (projectNameColumnIndex === -1) {
-            results.innerHTML = '<p>Excel file must have a "Project Name" column.</p>';
+        // Find the index of the "Item Number" column
+        const itemNumberColumnIndex = json[0].indexOf('Item Number');
+        if (itemNumberColumnIndex === -1) {
+            results.innerHTML = '<p>Excel file must have an "Item Number" column.</p>';
             return;
         }
 
@@ -66,11 +66,11 @@ function processFiles() {
                     const cycleTime = extractCycleTime(pdfText);
 
                     if (projectName && cycleTime) {
-                        // Find the row in the Excel file that matches the project name
+                        // Find the row in the Excel file that matches the project name with the item number
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
-                            if (json[i][projectNameColumnIndex] === projectName) {
+                            if (json[i][itemNumberColumnIndex] === projectName) {
                                 // Update the "TOTAL CYCLE TIME" column for this row
                                 if (cycleTimeColumnIndex === -1) {
                                     json[i].push(cycleTime); // Add to new column
@@ -83,7 +83,7 @@ function processFiles() {
                         }
 
                         if (!rowUpdated) {
-                            console.warn(`No matching project name found for PDF file: ${pdfFile.name}`);
+                            console.warn(`No matching item number found for PDF file: ${pdfFile.name}`);
                         }
                     } else {
                         console.warn(`Could not extract project name or cycle time from PDF file: ${pdfFile.name}`);
