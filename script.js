@@ -102,16 +102,20 @@ function searchFile() {
         // Update or add new rows to Excel based on filenames
         let newRowNumber = excelData.length + 1; // Start numbering from where existing data ends
         resultsArray.forEach(result => {
-            const rowIndex = excelData.findIndex(row => row[0] && row[0].toString() === result.fileName);
+            console.log('Processing file:', result.fileName);
+            // Normalize filenames for matching
+            const normalizedFileName = result.fileName.toLowerCase().replace(/\.[^/.]+$/, "");
+            const rowIndex = excelData.findIndex(row => row[0] && row[0].toLowerCase().replace(/\.[^/.]+$/, "") === normalizedFileName);
+            
             if (rowIndex === -1) {
-                // If no match, add a new row
+                console.log(`No match for ${result.fileName}, adding new row.`);
                 const newRow = [result.fileName, result.cycleTime || 'No instances of "TOTAL CYCLE TIME" found.'];
                 excelData.push(newRow);
-                console.log(`Added new row for ${result.fileName} with number ${newRowNumber}`);
-                newRowNumber++;
+                console.log('New row added:', newRow);
             } else {
-                // Update existing row
+                console.log(`Updating row for ${result.fileName}`);
                 excelData[rowIndex][1] = result.cycleTime || 'No instances of "TOTAL CYCLE TIME" found.';
+                console.log('Updated row:', excelData[rowIndex]);
             }
         });
 
@@ -145,7 +149,8 @@ function extractCycleTime(text) {
     for (const line of lines) {
         if (line.includes("TOTAL CYCLE TIME")) {
             console.log('Line with cycle time:', line);
-            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+            // More flexible regex for different time formats
+            const regex = /(\d+(?:\s*(?:HOURS?|HR))\s*,\s*\d+(?:\s*(?:MINUTES?|MIN))\s*,\s*\d+(?:\s*(?:SECONDS?|SEC)))/i;
             const match = line.match(regex);
             console.log('Match:', match);
             return match ? match[0] : null; // Return the matched time or null
@@ -170,11 +175,13 @@ function parsePDF(data) {
                     return page.getTextContent().then(textContent => {
                         let pageText = '';
                         textContent.items.forEach(item => {
-                            pageText += item.str + ' ';
+                            pageText += item.str + ' '; // Add space for separation
                         });
+                        console.log(`Text from page ${pageNum}:`, pageText); // Log each page
                         text += pageText + '\n'; // Add newline after each page
                         pagesRead++;
                         if (pagesRead === numPages) {
+                            console.log('Full text extracted:', text); // Log full text
                             resolve(text);
                         }
                     });
