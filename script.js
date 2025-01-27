@@ -19,10 +19,10 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Find the index of the "Item No." column
-        const itemNumberColumnIndex = json[0].indexOf('Item No.');
+        // Find the index of the "item No." column
+        const itemNumberColumnIndex = json[0].indexOf('item No.');
         if (itemNumberColumnIndex === -1) {
-            results.innerHTML = '<p>Excel file must have an "Item No." column.</p>';
+            results.innerHTML = '<p>Excel file must have an "item No." column.</p>';
             return;
         }
 
