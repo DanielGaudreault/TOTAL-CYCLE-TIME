@@ -24,6 +24,11 @@ h1 {
     margin-bottom: 20px;
 }
 
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
 input[type="file"] {
     width: 100%;
     padding: 8px;
@@ -50,21 +55,7 @@ button:hover {
     font-weight: bold;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-table, th, td {
-    border: 1px solid #ddd;
-}
-
-th, td {
-    padding: 10px;
+#results {
     text-align: left;
-}
-
-th {
-    background-color: #f2f2f2;
+    margin-top: 20px;
 }
