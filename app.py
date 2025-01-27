@@ -25,7 +25,7 @@ def upload_files():
     excel_file = request.files['excel']
     pdf_files = request.files.getlist('pdf')
 
-    # Save files temporarily
+    # Save Excel file temporarily
     excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
     excel_file.save(excel_path)
 
