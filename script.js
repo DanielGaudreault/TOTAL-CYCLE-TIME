@@ -20,7 +20,9 @@ function processFiles() {
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         // Add TOTAL CYCLE TIME as a new column
-        json[0].push('TOTAL CYCLE TIME'); // Add header
+        if (json.length > 0) {
+            json[0].push('TOTAL CYCLE TIME'); // Add header
+        }
 
         // Process each PDF file
         let processedCount = 0;
