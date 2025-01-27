@@ -17,13 +17,13 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def index():
     return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
-def upload_files():
-    if 'excel' not in request.files or 'pdf' not in request.files:
-        return jsonify({"error": "Please upload both Excel and PDF files."}), 400
+@app.route('/process', methods=['POST'])
+def process_files():
+    if 'excel' not in request.files or 'files' not in request.files:
+        return jsonify({"error": "Please upload both Excel and document files."}), 400
 
     excel_file = request.files['excel']
-    pdf_files = request.files.getlist('pdf')
+    uploaded_files = request.files.getlist('files')
 
     excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
     excel_file.save(excel_path)
@@ -42,49 +42,49 @@ def upload_files():
     if 'TOTAL CYCLE TIME' not in df.columns:
         df['TOTAL CYCLE TIME'] = ''
 
-    resultsArray = []
+    results = []
 
-    for pdf_file in pdf_files:
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
-        pdf_file.save(pdf_path)
+    for file in uploaded_files:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
 
         try:
-            pdf_reader = PdfReader(pdf_path)
-            pdf_text = ""
-            for page in pdf_reader.pages:
-                pdf_text += page.extract_text()
-            
-            print(f"Text from {pdf_file.filename}: {pdf_text[:100]}...")  # Only print first 100 characters for brevity
+            if file.filename.lower().endswith('.pdf'):
+                pdf_reader = PdfReader(file_path)
+                text = "".join(page.extract_text() for page in pdf_reader.pages)
+            else:
+                with open(file_path, 'r') as f:
+                    text = f.read()
 
-            cycle_time = extract_cycle_time(pdf_text)
-            resultsArray.append({'fileName': pdf_file.filename, 'cycleTime': cycle_time})
+            cycle_time = extract_cycle_time(text)
+            results.append({'fileName': file.filename, 'cycleTime': cycle_time})
 
         except Exception as e:
-            return jsonify({"error": f"Error processing PDF file {pdf_file.filename}: {str(e)}"}), 400
+            return jsonify({"error": f"Error processing {file.filename}: {str(e)}"}), 400
 
-    excelData = df.values.tolist()
+    for result in results:
+        # Normalize file name by removing extension for matching
+        normalizedFileName = os.path.splitext(result['fileName'])[0].lower()
+        rowIndex = df[df.iloc[:, 0].astype(str).str.lower().str.replace('.pdf', '') == normalizedFileName].index
 
-    for result in resultsArray:
-        normalizedFileName = result['fileName'].lower().replace('.pdf', '')  # Adjust the extension as needed
-        rowIndex = next((index for index, row in enumerate(excelData) if row[0] and row[0].lower().replace('.pdf', '') == normalizedFileName), None)
-
-        if rowIndex is not None:
-            print(f"Updating row for {result['fileName']}")
-            excelData[rowIndex][1] = result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.'
+        if not rowIndex.empty:
+            df.loc[rowIndex[0], 'File Name'] = result['fileName']
+            df.loc[rowIndex[0], 'TOTAL CYCLE TIME'] = result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.'
         else:
-            print(f"No match for {result['fileName']}, adding new row.")
-            newRow = [result['fileName'], result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.']
-            excelData.append(newRow)
-
-    # Convert back to DataFrame for saving
-    df = pd.DataFrame(excelData, columns=df.columns)
+            # Add new row if no match found
+            new_row = pd.DataFrame({
+                'File Name': [result['fileName']],
+                'TOTAL CYCLE TIME': [result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.'],
+                df.columns[0]: [normalizedFileName]  # Use the first column for the file name without extension
+            })
+            df = pd.concat([df, new_row], ignore_index=True)
 
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
     df.to_excel(updated_excel_path, index=False)
 
     # Clean up temp files
-    for file in os.listdir(app.config['UPLOAD_FOLDER']):
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file)
+    for temp_file in os.listdir(app.config['UPLOAD_FOLDER']):
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_file)
         try:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
