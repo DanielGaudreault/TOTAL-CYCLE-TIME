@@ -8,18 +8,69 @@
 </head>
 <body>
     <div class="container">
-        <h1>Update Excel with "TOTAL CYCLE TIME" from PDF Files</h1>
-        <form id="fileForm" enctype="multipart/form-data">
-            <input type="file" name="files" accept=".xlsx,.xls,.pdf" multiple>
-            <br><br>
-            <button onclick="processFiles(event)">Process Files</button>
+        <h1>Update Excel with TOTAL CYCLE TIME</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="excel">Upload Excel File:</label>
+                <input type="file" id="excel" name="excel" accept=".xlsx, .xls" required>
+            </div>
+            <div class="form-group">
+                <label for="files">Upload Files (PDF or Text):</label>
+                <input type="file" id="files" name="files" accept=".pdf,.txt" multiple required>
+            </div>
+            <button type="submit">Process Files</button>
         </form>
         <div id="loading" style="display: none;">Processing... Please wait.</div>
-        <h2>Results:</h2>
-        <p id="message"></p>
-        <button id="downloadButton" style="display: none;" onclick="downloadResults()">Download Updated Excel</button>
+        <div id="results"></div>
     </div>
 
-    <script src="script.js"></script> <!-- JavaScript file -->
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const excelFile = document.getElementById('excel').files[0];
+            const files = document.getElementById('files').files;
+
+            if (!excelFile || files.length === 0) {
+                alert('Please upload both Excel and PDF/text files.');
+                return;
+            }
+
+            formData.append('excel', excelFile);
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            loading.style.display = 'block';
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch('/process-files', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'updated_excel.xlsx';
+                    a.click();
+                    results.innerHTML = '<p>Excel file updated successfully!</p>';
+                } else {
+                    const error = await response.json();
+                    results.innerHTML = `<p>Error: ${error.error}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
 </body>
-</html>
+</html
