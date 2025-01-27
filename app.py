@@ -30,24 +30,23 @@ def process_files():
         os.makedirs(upload_dir, exist_ok=True)
 
         excel_data = pd.DataFrame()
-        if 'excel-files' in request.files:
-            for excel_file in request.files.getlist('excel-files'):
-                file_path = os.path.join(upload_dir, excel_file.filename)
-                excel_file.save(file_path)
-                print(f"Saved Excel file: {file_path}")
-                df = pd.read_excel(file_path)
-                excel_data = excel_data.append(df, ignore_index=True)
-
-        if 'pdf-files' in request.files:
-            for pdf_file in request.files.getlist('pdf-files'):
-                file_path = os.path.join(upload_dir, pdf_file.filename)
-                pdf_file.save(file_path)
-                print(f"Saved PDF file: {file_path}")
-                pdf_text = extract_text_from_pdf(file_path)
-                cycle_time = extract_cycle_time(pdf_text)
-                print(f"Extracted cycle time: {cycle_time}")
-                new_row = {'File_Name': pdf_file.filename, 'Extracted_Cycle_Time': cycle_time}
-                excel_data = excel_data.append(new_row, ignore_index=True)
+        if 'files' in request.files:
+            for file in request.files.getlist('files'):
+                file_path = os.path.join(upload_dir, file.filename)
+                file.save(file_path)
+                print(f"Saved file: {file_path}")
+                
+                if file.filename.endswith('.xlsx'):
+                    df = pd.read_excel(file_path)
+                    excel_data = excel_data.append(df, ignore_index=True)
+                elif file.filename.endswith('.pdf'):
+                    pdf_text = extract_text_from_pdf(file_path)
+                    cycle_time = extract_cycle_time(pdf_text)
+                    print(f"Extracted cycle time: {cycle_time}")
+                    new_row = {'File_Name': file.filename, 'Extracted_Cycle_Time': cycle_time}
+                    excel_data = excel_data.append(new_row, ignore_index=True)
+                else:
+                    print(f"Unsupported file type: {file.filename}")
 
         output_excel = os.path.join(upload_dir, 'updated_excel.xlsx')
         excel_data.to_excel(output_excel, index=False)
