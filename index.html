@@ -3,28 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Excel with TOTAL CYCLE TIME</title>
+    <title>Find TOTAL CYCLE TIME</title>
     <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Update Excel with TOTAL CYCLE TIME</h1>
-        <div class="form-group">
-            <label for="excel">Upload Excel File:</label>
-            <input type="file" id="excel" accept=".xlsx, .xls">
-        </div>
-        <div class="form-group">
-            <label for="pdf">Upload PDF Files or Folders (You can select multiple files or folders):</label>
-            <input type="file" id="pdf" accept=".pdf" multiple webkitdirectory>
-        </div>
-        <button onclick="processFiles()">Update Excel</button>
-        <div id="results"></div>
+        <h1>Find "TOTAL CYCLE TIME" in Files and Update Excel</h1>
+        <input type="file" id="fileInput" accept=".txt,.pdf" multiple>
+        <br><br>
+        <input type="file" id="excelInput" accept=".xlsx, .xls">
+        <br><br>
+        <button onclick="searchFile()">Process Files</button>
+        <h2>Results:</h2>
+        <pre id="results"></pre>
     </div>
 
-    <!-- SheetJS Library for Excel Handling -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- PDF.js Library for PDF Handling -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="script.js"></script> <!-- JavaScript file -->
+    <script src="script.js"></script>
 </body>
 </html>
