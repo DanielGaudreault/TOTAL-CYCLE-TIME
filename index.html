@@ -3,74 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Excel with TOTAL CYCLE TIME</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
+    <title>File Upload</title>
+    <script defer src="script.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Update Excel with TOTAL CYCLE TIME</h1>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="excel">Upload Excel Files (You can select many files):</label>
-                <input type="file" id="excel" name="excel" accept=".xlsx, .xls" multiple required>
-            </div>
-            <div class="form-group">
-                <label for="pdf">Upload PDF Files (You can select many files):</label>
-                <input type="file" id="pdf" name="pdf" accept=".pdf" multiple required>
-            </div>
-            <button type="submit">Update Excel</button>
-        </form>
-        <div id="results"></div>
-    </div>
-
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData();
-            const excelFiles = document.getElementById('excel').files;
-            const pdfFiles = document.getElementById('pdf').files;
-
-            if (excelFiles.length === 0 || pdfFiles.length === 0) {
-                document.getElementById('results').innerHTML = '<p>Please upload both Excel and PDF files.</p>';
-                return;
-            }
-
-            // Add all Excel files to FormData
-            for (let i = 0; i < excelFiles.length; i++) {
-                formData.append('excel', excelFiles[i]);
-            }
-
-            // Add all PDF files to FormData
-            for (let i = 0; i < pdfFiles.length; i++) {
-                formData.append('pdf', pdfFiles[i]);
-            }
-
-            const results = document.getElementById('results');
-            results.innerHTML = '<p>Processing files... Please wait.</p>';
-
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'updated_excel.xlsx';
-                    a.click();
-                    results.innerHTML = '<p>Excel file updated successfully!</p>';
-                } else {
-                    const error = await response.json();
-                    results.innerHTML = `<p>Error: ${error.error}</p>`;
-                }
-            } catch (error) {
-                results.innerHTML = `<p>Error: ${error.message}</p>`;
-            }
-        });
-    </script>
+    <h1>Upload Excel and PDF Files</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <label for="excel-files">Select Excel Files:</label>
+        <input type="file" id="excel-files" name="excel-files" multiple accept=".xlsx"><br><br>
+        <label for="pdf-files">Select PDF Files:</label>
+        <input type="file" id="pdf-files" name="pdf-files" multiple accept=".pdf"><br><br>
+        <button type="submit">Upload and Process</button>
+    </form>
+    <div id="output"></div>
 </body>
 </html>
