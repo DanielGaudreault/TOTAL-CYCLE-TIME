@@ -9,6 +9,8 @@ document.getElementById('upload-form').addEventListener('submit', function(event
         console.log(`Appending file: ${files[i].name}`);
     }
 
+    console.log('Sending form data to server...');
+    
     fetch('/process-files', {
         method: 'POST',
         body: formData
