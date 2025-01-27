@@ -73,7 +73,7 @@ function processFiles() {
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
-                            if (json[i][itemNumberColumnIndex] === itemNumber) {
+                            if (json[i][itemNumberColumnIndex] == itemNumber) { // Use == for loose comparison
                                 // Update the "File Name" and "TOTAL CYCLE TIME" columns for this row
                                 if (fileNameColumnIndex === -1) {
                                     json[i].push(pdfFile.name); // Add to new column
@@ -88,6 +88,7 @@ function processFiles() {
                                 }
 
                                 rowUpdated = true;
+                                console.log(`Updated row ${i} with File Name: ${pdfFile.name}, TOTAL CYCLE TIME: ${cycleTime}`);
                                 break;
                             }
                         }
