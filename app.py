@@ -32,6 +32,12 @@ def extract_cycle_time(text):
             return match.group(0) if match else None
     return None
 
+def extract_part_number(text):
+    """Extract the part number from the text."""
+    regex = r"Part Number\s*:\s*(\w+)"
+    match = re.search(regex, text, re.IGNORECASE)
+    return match.group(1) if match else None
+
 @app.route('/process-files', methods=['POST'])
 def process_files():
     try:
@@ -51,8 +57,8 @@ def process_files():
             return jsonify({"error": f"Error reading Excel file: {e}"}), 400
 
         # Ensure the Excel file has the required columns
-        if 'File Name' not in df.columns or 'Part Number' not in df.columns:
-            return jsonify({"error": "Excel file must contain 'File Name' and 'Part Number' columns."}), 400
+        if 'File Name' not in df.columns or 'Part Number' not in df.columns or 'TOTAL CYCLE TIME' not in df.columns:
+            return jsonify({"error": "Excel file must contain 'File Name', 'Part Number', and 'TOTAL CYCLE TIME' columns."}), 400
 
         # Process each uploaded file
         for file in request.files.getlist('files'):
@@ -78,22 +84,24 @@ def process_files():
                     df.loc[df['File Name'] == file_name, 'TOTAL CYCLE TIME'] = cycle_time
                 elif part_number and part_number in df['Part Number'].values:
                     df.loc[df['Part Number'] == part_number, 'TOTAL CYCLE TIME'] = cycle_time
+                else:
+                    # Add new row if no match found
+                    new_row = pd.DataFrame({
+                        'File Name': [file_name],
+                        'Part Number': [part_number or 'Unknown'],
+                        'TOTAL CYCLE TIME': [cycle_time]
+                    })
+                    df = pd.concat([df, new_row], ignore_index=True)
 
         # Save the updated Excel file
         updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
         df.to_excel(updated_excel_path, index=False)
 
         # Provide download link for the updated Excel file
-        return send_file(updated_excel_path, as_attachment=True)
+        return send_file(updated_excel_path, as_attachment=True, download_name='updated_excel.xlsx')
 
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-def extract_part_number(text):
-    """Extract the part number from the text."""
-    regex = r"Part Number\s*:\s*(\w+)"
-    match = re.search(regex, text, re.IGNORECASE)
-    return match.group(1) if match else None
 
 if __name__ == '__main__':
     app.run(debug=True)
