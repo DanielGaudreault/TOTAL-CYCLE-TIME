@@ -1,12 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import pandas as pd
-import fitz
+import fitz  # PyMuPDF for PDF processing
 import os
 import re
 
 app = Flask(__name__)
 
+# Ensure the uploads directory exists
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 def extract_text_from_pdf(pdf_path):
+    """Extract text from a PDF file."""
     pdf_document = fitz.open(pdf_path)
     text = ""
     for page_num in range(pdf_document.page_count):
@@ -15,6 +23,7 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 def extract_cycle_time(text):
+    """Extract the 'TOTAL CYCLE TIME' from the text."""
     lines = text.split('\n')
     for line in lines:
         if "TOTAL CYCLE TIME" in line:
@@ -26,56 +35,65 @@ def extract_cycle_time(text):
 @app.route('/process-files', methods=['POST'])
 def process_files():
     try:
-        upload_dir = 'uploads'
-        os.makedirs(upload_dir, exist_ok=True)
-        print("Upload directory created")
+        # Check if files are uploaded
+        if 'files' not in request.files or 'excel' not in request.files:
+            return jsonify({"error": "Please upload both Excel and PDF files."}), 400
 
-        excel_data = None
-        results = []
+        # Save the Excel file
+        excel_file = request.files['excel']
+        excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
+        excel_file.save(excel_path)
 
-        if 'files' in request.files:
-            for file in request.files.getlist('files'):
-                file_path = os.path.join(upload_dir, file.filename)
-                file.save(file_path)
-                print(f"Saved file: {file_path}")
-                
-                if file.filename.endswith(('.xlsx', '.xls')):
-                    excel_data = pd.read_excel(file_path)
-                elif file.filename.endswith('.pdf'):
-                    pdf_text = extract_text_from_pdf(file_path)
-                    cycle_time = extract_cycle_time(pdf_text)
-                    print(f"Extracted cycle time: {cycle_time}")
-                    results.append({'File_Name': file.filename, 'Cycle_Time': cycle_time, 'Setup_Number': os.path.splitext(file.filename)[0]})
+        # Read the Excel file
+        try:
+            df = pd.read_excel(excel_path)
+        except Exception as e:
+            return jsonify({"error": f"Error reading Excel file: {e}"}), 400
 
-        if excel_data is not None and results:
-            for result in results:
-                # Find matching row by file name or setup number (assuming setup number is part of the filename)
-                match_row = excel_data[excel_data.iloc[:, 0].astype(str).str.lower().str.contains(result['Setup_Number'].lower(), case=False)]
-                
-                if not match_row.empty:
-                    # Update existing row
-                    match_row_index = match_row.index[0]
-                    excel_data.loc[match_row_index, 'C'] = result['Setup_Number']  # Assuming 'C' is the third column
-                    excel_data.loc[match_row_index, 'D'] = result['Cycle_Time'] if result['Cycle_Time'] else 'Not Found'
-                else:
-                    # Add new row if no match found
-                    new_row = pd.DataFrame({
-                        excel_data.columns[0]: [result['Setup_Number']],  # 1st column for setup number
-                        'C': [result['Setup_Number']],  # 3rd column for setup number if not found
-                        'D': [result['Cycle_Time'] if result['Cycle_Time'] else 'Not Found']
-                    })
-                    excel_data = pd.concat([excel_data, new_row], ignore_index=True)
+        # Ensure the Excel file has the required columns
+        if 'File Name' not in df.columns or 'Part Number' not in df.columns:
+            return jsonify({"error": "Excel file must contain 'File Name' and 'Part Number' columns."}), 400
 
-            output_excel = os.path.join(upload_dir, 'updated_excel.xlsx')
-            excel_data.to_excel(output_excel, index=False)
-            print(f"Updated Excel file saved as: {output_excel}")
+        # Process each uploaded file
+        for file in request.files.getlist('files'):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(file_path)
 
-            return jsonify({'message': 'Files processed successfully!', 'output_excel': output_excel})
-        else:
-            return jsonify({'message': 'No valid Excel file or PDF files were processed.'})
+            # Extract text from the file
+            if file.filename.lower().endswith('.pdf'):
+                text = extract_text_from_pdf(file_path)
+            else:
+                with open(file_path, 'r') as f:
+                    text = f.read()
+
+            # Extract the cycle time
+            cycle_time = extract_cycle_time(text)
+            if cycle_time:
+                # Match the file name or part number with the Excel row
+                file_name = file.filename
+                part_number = extract_part_number(text)  # Extract part number from the file
+
+                # Update the matching row in the Excel file
+                if file_name in df['File Name'].values:
+                    df.loc[df['File Name'] == file_name, 'TOTAL CYCLE TIME'] = cycle_time
+                elif part_number and part_number in df['Part Number'].values:
+                    df.loc[df['Part Number'] == part_number, 'TOTAL CYCLE TIME'] = cycle_time
+
+        # Save the updated Excel file
+        updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
+        df.to_excel(updated_excel_path, index=False)
+
+        # Provide download link for the updated Excel file
+        return send_file(updated_excel_path, as_attachment=True)
+
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'message': 'Error processing files.', 'error': str(e)})
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+def extract_part_number(text):
+    """Extract the part number from the text."""
+    regex = r"Part Number\s*:\s*(\w+)"
+    match = re.search(regex, text, re.IGNORECASE)
+    return match.group(1) if match else None
 
 if __name__ == '__main__':
     app.run(debug=True)
