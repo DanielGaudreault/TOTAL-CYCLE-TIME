@@ -36,11 +36,14 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
-    # Ensure the Excel file has an "Item Number" column
-    if 'Item Number' not in df.columns:
-        return "Excel file must have an 'Item Number' column."
+    # Ensure the Excel file has an "Item No." column
+    if 'Item No.' not in df.columns:
+        return "Excel file must have an 'Item No.' column."
 
-    # Add "TOTAL CYCLE TIME" column if it doesn't exist
+    # Add "File Name" and "TOTAL CYCLE TIME" columns if they don't exist
+    if 'File Name' not in df.columns:
+        df['File Name'] = ''
+
     if 'TOTAL CYCLE TIME' not in df.columns:
         df['TOTAL CYCLE TIME'] = ''
 
@@ -58,21 +61,24 @@ def upload_files():
         except Exception as e:
             return f"Error reading PDF file: {e}"
 
-        # Extract Item Number and TOTAL CYCLE TIME from PDF text
-        item_number = extract_item_number(pdf_text)
+        # Extract Item Number from the file name
+        item_number = extract_item_number_from_file_name(pdf_file.filename)
+
+        # Extract TOTAL CYCLE TIME from PDF text
         cycle_time = extract_cycle_time(pdf_text)
 
-        if item_number and cycle_time:
-            # Match item number with the "Item Number" column in Excel
-            matching_row = df['Item Number'] == item_number
+        if item_number:
+            # Match item number with the "Item No." column in Excel
+            matching_row = df['Item No.'] == item_number
 
             if matching_row.any():
-                # Update the "TOTAL CYCLE TIME" column for the matching row
-                df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time
+                # Update the "File Name" and "TOTAL CYCLE TIME" columns for the matching row
+                df.loc[matching_row, 'File Name'] = pdf_file.filename
+                df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time or ''
             else:
                 print(f"No matching item number found for PDF file: {pdf_file.filename}")
         else:
-            print(f"Could not extract item number or cycle time from PDF file: {pdf_file.filename}")
+            print(f"Could not extract item number from PDF file name: {pdf_file.filename}")
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
@@ -81,10 +87,11 @@ def upload_files():
     # Provide download link
     return send_file(updated_excel_path, as_attachment=True)
 
-def extract_item_number(text):
-    # Use regex to find the item number in the PDF text
-    regex = r"Item Number\s*:\s*([\w\s-]+)"
-    match = re.search(regex, text, re.IGNORECASE)
+def extract_item_number_from_file_name(file_name):
+    # Use regex to extract the item number from the file name
+    # Example: "Item12345.pdf" -> "12345"
+    regex = r"Item\s*(\d+)"
+    match = re.search(regex, file_name, re.IGNORECASE)
     return match.group(1).strip() if match else None
 
 def extract_cycle_time(text):
