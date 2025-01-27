@@ -3,17 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload</title>
-    <link rel="stylesheet" href="styles.css">
-    <script defer src="script.js"></script>
+    <title>Find TOTAL CYCLE TIME</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
-    <h1>Upload Files Containing PDFs</h1>
-    <form id="upload-form" enctype="multipart/form-data">
-        <label for="files">Select Files:</label>
-        <input type="file" id="files" name="files" multiple><br><br>
-        <button type="submit">Upload and Process</button>
-    </form>
-    <div id="results"></div>
+    <div class="container">
+        <h1>Find "TOTAL CYCLE TIME" in Files</h1>
+        <input type="file" id="fileInput" accept=".txt,.pdf" multiple>
+        <br><br>
+        <button onclick="processFiles()">Process Files</button>
+        <div id="loading" style="display: none;">Processing... Please wait.</div>
+        <h2>Results:</h2>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>TOTAL CYCLE TIME</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Results will be added here -->
+            </tbody>
+        </table>
+        <br>
+        <button id="downloadButton" style="display: none;" onclick="downloadResults()">Download Results</button>
+    </div>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- SheetJS Library for Excel Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script> <!-- JavaScript file -->
 </body>
 </html>
