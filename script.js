@@ -1,18 +1,12 @@
 document.getElementById('upload-form').addEventListener('submit', function(event) {
     event.preventDefault();
 
-    const excelFiles = document.getElementById('excel-files').files;
-    const pdfFiles = document.getElementById('pdf-files').files;
+    const files = document.getElementById('files').files;
     const formData = new FormData();
 
-    for (let i = 0; i < excelFiles.length; i++) {
-        formData.append('excel-files', excelFiles[i]);
-        console.log(`Appending Excel file: ${excelFiles[i].name}`);
-    }
-
-    for (let i = 0; i < pdfFiles.length; i++) {
-        formData.append('pdf-files', pdfFiles[i]);
-        console.log(`Appending PDF file: ${pdfFiles[i].name}`);
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+        console.log(`Appending file: ${files[i].name}`);
     }
 
     fetch('/process-files', {
