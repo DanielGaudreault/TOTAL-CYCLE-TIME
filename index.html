@@ -4,23 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Excel with TOTAL CYCLE TIME</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
-    <div class="container">
-        <h1>Update Excel with "TOTAL CYCLE TIME" from PDF and Text Files</h1>
-        <input type="file" id="fileInput" accept=".txt,.pdf" multiple>
-        <br><br>
-        <input type="file" id="excelInput" accept=".xlsx, .xls">
-        <br><br>
-        <button onclick="searchFile()">Process Files</button>
-        <h2>Results:</h2>
-        <pre id="results"></pre>
-    </div>
-
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="script.js"></script> <!-- JavaScript file -->
+    <h1>Update Excel with "TOTAL CYCLE TIME" from PDF and Text Files</h1>
+    <form action="/process" method="post" enctype="multipart/form-data">
+        <input type="file" name="excel" accept=".xlsx, .xls" required>
+        <input type="file" name="files" accept=".txt, .pdf" multiple required>
+        <input type="submit" value="Process Files">
+    </form>
 </body>
 </html>
