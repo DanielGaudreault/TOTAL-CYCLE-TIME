@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import pandas as pd
 import fitz
 import os
-import re  # Added import for regular expressions
+import re
 
 app = Flask(__name__)
 
@@ -28,6 +28,7 @@ def process_files():
     try:
         upload_dir = 'uploads'
         os.makedirs(upload_dir, exist_ok=True)
+        print("Upload directory created")
 
         excel_data = pd.DataFrame()
         if 'files' in request.files:
