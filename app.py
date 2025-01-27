@@ -1,35 +1,48 @@
+from flask import Flask, request, jsonify
 import pandas as pd
-import fitz  # PyMuPDF
+import fitz
 import os
 
+app = Flask(__name__)
+
+# Function to extract text from a PDF file
 def extract_text_from_pdf(pdf_path):
-    """Extract text from a PDF file."""
+    pdf_document = fitz.open(pdf_path)
     text = ""
-    with fitz.open(pdf_path) as doc:
-        for page in doc:
-            text += page.get_text()
+    for page_num in range(pdf_document.page_count):
+        page = pdf_document.load_page(page_num)
+        text += page.get_text()
     return text
 
-def update_excel_with_pdf_data(excel_path, pdf_folder):
-    """Update Excel sheet with data extracted from PDF files."""
-    # Load the existing Excel file
-    df = pd.read_excel(excel_path)
+@app.route('/process-files', methods=['POST'])
+def process_files():
+    # Directory to save uploaded files
+    upload_dir = 'uploads'
+    os.makedirs(upload_dir, exist_ok=True)
 
-    # Iterate through all PDF files in the specified folder
-    for pdf_file in os.listdir(pdf_folder):
-        if pdf_file.endswith('.pdf'):
-            pdf_path = os.path.join(pdf_folder, pdf_file)
-            pdf_text = extract_text_from_pdf(pdf_path)
-            
-            # Here, you can process the extracted text and update the DataFrame as needed
-            # For demonstration, let's assume we append the PDF text as a new row
-            new_row = {'PDF_File': pdf_file, 'Extracted_Text': pdf_text}
-            df = df.append(new_row, ignore_index=True)
+    # Handling Excel files
+    excel_data = pd.DataFrame()
+    if 'excel-files' in request.files:
+        for excel_file in request.files.getlist('excel-files'):
+            file_path = os.path.join(upload_dir, excel_file.filename)
+            excel_file.save(file_path)
+            df = pd.read_excel(file_path)
+            excel_data = excel_data.append(df, ignore_index=True)
 
-    # Save the updated DataFrame back to the Excel file
-    df.to_excel(excel_path, index=False)
+    # Handling PDF files
+    if 'pdf-files' in request.files:
+        for pdf_file in request.files.getlist('pdf-files'):
+            file_path = os.path.join(upload_dir, pdf_file.filename)
+            pdf_file.save(file_path)
+            pdf_text = extract_text_from_pdf(file_path)
+            new_row = {'Extracted_Text': pdf_text}
+            excel_data = excel_data.append(new_row, ignore_index=True)
 
-# Example usage
-excel_path = 'path/to/your/excel_file.xlsx'
-pdf_folder = 'path/to/your/pdf_folder'
-update_excel_with_pdf_data(excel_path, pdf_folder)
+    # Save the updated DataFrame to an Excel file
+    output_excel = os.path.join(upload_dir, 'updated_excel.xlsx')
+    excel_data.to_excel(output_excel, index=False)
+
+    return jsonify({'message': 'Files processed successfully!', 'output_excel': output_excel})
+
+if __name__ == '__main__':
+    app.run(debug=True)
