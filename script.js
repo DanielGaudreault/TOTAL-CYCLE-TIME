@@ -19,14 +19,19 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Find the index of the "Item Number" column
-        const itemNumberColumnIndex = json[0].indexOf('Item Number');
+        // Find the index of the "Item No." column
+        const itemNumberColumnIndex = json[0].indexOf('Item No.');
         if (itemNumberColumnIndex === -1) {
-            results.innerHTML = '<p>Excel file must have an "Item Number" column.</p>';
+            results.innerHTML = '<p>Excel file must have an "Item No." column.</p>';
             return;
         }
 
-        // Add "TOTAL CYCLE TIME" as a new column if it doesn't exist
+        // Add "File Name" and "TOTAL CYCLE TIME" as new columns if they don't exist
+        const fileNameColumnIndex = json[0].indexOf('File Name');
+        if (fileNameColumnIndex === -1) {
+            json[0].push('File Name'); // Add header
+        }
+
         const cycleTimeColumnIndex = json[0].indexOf('TOTAL CYCLE TIME');
         if (cycleTimeColumnIndex === -1) {
             json[0].push('TOTAL CYCLE TIME'); // Add header
@@ -45,7 +50,7 @@ function processFiles() {
 
                 // Download the updated Excel file
                 XLSX.writeFile(updatedWorkbook, 'updated_excel.xlsx');
-                results.innerHTML = `<p>Excel file updated successfully! "TOTAL CYCLE TIME" added for ${processedCount} PDF(s).</p>`;
+                results.innerHTML = `<p>Excel file updated successfully! "File Name" and "TOTAL CYCLE TIME" added for ${processedCount} PDF(s).</p>`;
                 return;
             }
 
@@ -61,22 +66,31 @@ function processFiles() {
             pdfReader.onload = function (event) {
                 const pdfData = new Uint8Array(event.target.result);
                 parsePDF(pdfData).then(pdfText => {
-                    // Extract Item Number and TOTAL CYCLE TIME from PDF text
-                    const itemNumber = extractItemNumber(pdfText);
+                    // Extract Item Number from the file name
+                    const itemNumber = extractItemNumberFromFileName(pdfFile.name);
+
+                    // Extract TOTAL CYCLE TIME from PDF text
                     const cycleTime = extractCycleTime(pdfText);
 
-                    if (itemNumber && cycleTime) {
+                    if (itemNumber) {
                         // Find the row in the Excel file that matches the item number
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
                             if (json[i][itemNumberColumnIndex] === itemNumber) {
-                                // Update the "TOTAL CYCLE TIME" column for this row
-                                if (cycleTimeColumnIndex === -1) {
-                                    json[i].push(cycleTime); // Add to new column
+                                // Update the "File Name" and "TOTAL CYCLE TIME" columns for this row
+                                if (fileNameColumnIndex === -1) {
+                                    json[i].push(pdfFile.name); // Add to new column
                                 } else {
-                                    json[i][cycleTimeColumnIndex] = cycleTime; // Update existing column
+                                    json[i][fileNameColumnIndex] = pdfFile.name; // Update existing column
                                 }
+
+                                if (cycleTimeColumnIndex === -1) {
+                                    json[i].push(cycleTime || ''); // Add to new column
+                                } else {
+                                    json[i][cycleTimeColumnIndex] = cycleTime || ''; // Update existing column
+                                }
+
                                 rowUpdated = true;
                                 break;
                             }
@@ -86,7 +100,7 @@ function processFiles() {
                             console.warn(`No matching item number found for PDF file: ${pdfFile.name}`);
                         }
                     } else {
-                        console.warn(`Could not extract item number or cycle time from PDF file: ${pdfFile.name}`);
+                        console.warn(`Could not extract item number from PDF file name: ${pdfFile.name}`);
                     }
 
                     processedCount++;
@@ -102,10 +116,11 @@ function processFiles() {
     excelReader.readAsArrayBuffer(excelFile);
 }
 
-function extractItemNumber(text) {
-    // Use regex to find the item number in the PDF text
-    const regex = /Item Number\s*:\s*([\w\s-]+)/i;
-    const match = text.match(regex);
+function extractItemNumberFromFileName(fileName) {
+    // Use regex to extract the item number from the file name
+    // Example: "Item12345.pdf" -> "12345"
+    const regex = /Item\s*(\d+)/i;
+    const match = fileName.match(regex);
     return match ? match[1].trim() : null; // Return the matched item number or null
 }
 
