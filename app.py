@@ -1,3 +1,28 @@
+from flask import Flask, request, jsonify
+import pandas as pd
+import fitz
+import os
+import re  # Added import for regular expressions
+
+app = Flask(__name__)
+
+def extract_text_from_pdf(pdf_path):
+    pdf_document = fitz.open(pdf_path)
+    text = ""
+    for page_num in range(pdf_document.page_count):
+        page = pdf_document.load_page(page_num)
+        text += page.get_text()
+    return text
+
+def extract_cycle_time(text):
+    lines = text.split('\n')
+    for line in lines:
+        if "TOTAL CYCLE TIME" in line:
+            regex = r"(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)"
+            match = re.search(regex, line, re.IGNORECASE)
+            return match.group(0) if match else None
+    return None
+
 @app.route('/process-files', methods=['POST'])
 def process_files():
     try:
@@ -32,3 +57,6 @@ def process_files():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'message': 'Error processing files.', 'error': str(e)})
+
+if __name__ == '__main__':
+    app.run(debug=True)
