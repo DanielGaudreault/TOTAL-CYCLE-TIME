@@ -69,12 +69,13 @@ def upload_files():
 
         if item_number:
             # Match item number with column B (index 1) in Excel
-            matching_row = df.iloc[:, 1] == item_number
+            matching_row = df.iloc[:, 1].astype(str) == str(item_number)
 
             if matching_row.any():
                 # Update the "File Name" and "TOTAL CYCLE TIME" columns for the matching row
                 df.loc[matching_row, 'File Name'] = pdf_file.filename
                 df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time or ''
+                print(f"Updated row with Item No. {item_number}: File Name = {pdf_file.filename}, TOTAL CYCLE TIME = {cycle_time}")
             else:
                 print(f"No matching item number found for PDF file: {pdf_file.filename}")
         else:
