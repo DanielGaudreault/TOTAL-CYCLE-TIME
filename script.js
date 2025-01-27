@@ -19,12 +19,8 @@ function processFiles() {
         // Convert Excel sheet to JSON
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Find the index of the "item No." column
-        const itemNumberColumnIndex = json[0].indexOf('item No.');
-        if (itemNumberColumnIndex === -1) {
-            results.innerHTML = '<p>Excel file must have an "item No." column.</p>';
-            return;
-        }
+        // Column B is index 1 (zero-based)
+        const itemNumberColumnIndex = 1;
 
         // Add "File Name" and "TOTAL CYCLE TIME" as new columns if they don't exist
         const fileNameColumnIndex = json[0].indexOf('File Name');
@@ -73,7 +69,7 @@ function processFiles() {
                     const cycleTime = extractCycleTime(pdfText);
 
                     if (itemNumber) {
-                        // Find the row in the Excel file that matches the item number
+                        // Find the row in the Excel file that matches the item number in column B
                         let rowUpdated = false;
 
                         for (let i = 1; i < json.length; i++) {
