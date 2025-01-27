@@ -23,17 +23,12 @@ function searchFile() {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = function (event) {
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0]; // Assuming the first sheet
-                    const sheet = workbook.Sheets[sheetName];
-                    excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    resolve(workbook);
-                } catch (error) {
-                    console.error('Error parsing Excel:', error);
-                    reject(error);
-                }
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0]; // Assuming the first sheet
+                const sheet = workbook.Sheets[sheetName];
+                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                resolve(workbook);
             };
             reader.onerror = reject;
             reader.readAsArrayBuffer(file);
@@ -45,25 +40,19 @@ function searchFile() {
             const reader = new FileReader();
 
             reader.onload = function (event) {
-                try {
-                    const content = event.target.result;
-                    if (file.type === 'application/pdf') {
-                        parsePDF(content).then(text => {
-                            console.log(`Text extracted from ${file.name}:`, text);
-                            const cycleTime = extractCycleTime(text);
-                            resultsArray[index] = { fileName: file.name, cycleTime };
-                            resolve();
-                        }).catch(reject);
-                    } else if (file.type === 'text/plain') {
-                        const cycleTime = extractCycleTime(content);
+                const content = event.target.result;
+                if (file.type === 'application/pdf') {
+                    parsePDF(content).then(text => {
+                        const cycleTime = extractCycleTime(text);
                         resultsArray[index] = { fileName: file.name, cycleTime };
                         resolve();
-                    } else {
-                        reject(new Error('Unsupported file type'));
-                    }
-                } catch (error) {
-                    console.error(`Error processing file ${file.name}:`, error);
-                    reject(error);
+                    }).catch(reject);
+                } else if (file.type === 'text/plain') {
+                    const cycleTime = extractCycleTime(content);
+                    resultsArray[index] = { fileName: file.name, cycleTime };
+                    resolve();
+                } else {
+                    reject(new Error('Unsupported file type'));
                 }
             };
 
@@ -79,15 +68,8 @@ function searchFile() {
 
     const processAllFiles = async () => {
         results.textContent = 'Processing files...';
-        let workbook;
-        try {
-            workbook = await parseExcel(excelInput.files[0]);
-        } catch (error) {
-            results.textContent = `Error parsing Excel file: ${error.message}`;
-            return;
-        }
-
-        console.log('Excel Data Before Update:', excelData);
+        // Wait for Excel parsing to complete
+        const workbook = await parseExcel(excelInput.files[0]);
 
         // Process each file
         for (let i = 0; i < files.length; i++) {
@@ -99,27 +81,16 @@ function searchFile() {
             }
         }
 
-        // Update or add new rows to Excel based on filenames
-        let newRowNumber = excelData.length + 1; // Start numbering from where existing data ends
+        // Update Excel with cycle time based on filenames
         resultsArray.forEach(result => {
-            console.log('Processing file:', result.fileName);
-            // Normalize filenames for matching
-            const normalizedFileName = result.fileName.toLowerCase().replace(/\.[^/.]+$/, "");
-            const rowIndex = excelData.findIndex(row => row[0] && row[0].toLowerCase().replace(/\.[^/.]+$/, "") === normalizedFileName);
-            
-            if (rowIndex === -1) {
-                console.log(`No match for ${result.fileName}, adding new row.`);
-                const newRow = [result.fileName, result.cycleTime || 'No instances of "TOTAL CYCLE TIME" found.'];
-                excelData.push(newRow);
-                console.log('New row added:', newRow);
-            } else {
-                console.log(`Updating row for ${result.fileName}`);
+            const rowIndex = excelData.findIndex(row => row[0] && row[0].toString() === result.fileName);
+            if (rowIndex !== -1) {
                 excelData[rowIndex][1] = result.cycleTime || 'No instances of "TOTAL CYCLE TIME" found.';
-                console.log('Updated row:', excelData[rowIndex]);
+            } else {
+                // Add new row if file name not found
+                excelData.push([result.fileName, result.cycleTime || 'No instances of "TOTAL CYCLE TIME" found.']);
             }
         });
-
-        console.log('Excel Data After Update:', excelData);
 
         // Update the sheet with modified data
         const updatedSheet = XLSX.utils.aoa_to_sheet(excelData);
@@ -145,14 +116,11 @@ function searchFile() {
 }
 
 function extractCycleTime(text) {
-    const lines = text ? text.split('\n') : []; // Split text into lines
+    const lines = text.split('\n'); // Split text into lines
     for (const line of lines) {
         if (line.includes("TOTAL CYCLE TIME")) {
-            console.log('Line with cycle time:', line);
-            // More flexible regex for different time formats
-            const regex = /(\d+(?:\s*(?:HOURS?|HR))\s*,\s*\d+(?:\s*(?:MINUTES?|MIN))\s*,\s*\d+(?:\s*(?:SECONDS?|SEC)))/i;
+            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
             const match = line.match(regex);
-            console.log('Match:', match);
             return match ? match[0] : null; // Return the matched time or null
         }
     }
@@ -168,34 +136,24 @@ function parsePDF(data) {
         loadingTask.promise.then(pdf => {
             let text = '';
             const numPages = pdf.numPages;
-            let pagesRead = 0;
 
             const fetchPage = (pageNum) => {
                 return pdf.getPage(pageNum).then(page => {
                     return page.getTextContent().then(textContent => {
                         let pageText = '';
                         textContent.items.forEach(item => {
-                            pageText += item.str + ' '; // Add space for separation
+                            pageText += item.str + ' ';
                         });
-                        console.log(`Text from page ${pageNum}:`, pageText); // Log each page
                         text += pageText + '\n'; // Add newline after each page
-                        pagesRead++;
-                        if (pagesRead === numPages) {
-                            console.log('Full text extracted:', text); // Log full text
-                            resolve(text);
-                        }
                     });
                 });
             };
 
             const fetchAllPages = async () => {
                 for (let i = 1; i <= numPages; i++) {
-                    try {
-                        await fetchPage(i);
-                    } catch (error) {
-                        console.error(`Error fetching page ${i}:`, error);
-                    }
+                    await fetchPage(i);
                 }
+                resolve(text);
             };
 
             fetchAllPages();
