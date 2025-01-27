@@ -33,16 +33,16 @@ def upload_files():
     except Exception as e:
         return jsonify({"error": f"Error reading Excel file: {str(e)}"}), 400
 
-    # Ensure the Excel file has at least 2 columns (column B is index 1)
     if len(df.columns) < 2:
         return jsonify({"error": "Excel file must have at least 2 columns."}), 400
 
-    # Add "File Name" and "TOTAL CYCLE TIME" columns if they don't exist
     if 'File Name' not in df.columns:
         df['File Name'] = ''
     
     if 'TOTAL CYCLE TIME' not in df.columns:
         df['TOTAL CYCLE TIME'] = ''
+
+    resultsArray = []
 
     for pdf_file in pdf_files:
         pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_file.filename)
@@ -54,28 +54,30 @@ def upload_files():
             for page in pdf_reader.pages:
                 pdf_text += page.extract_text()
             
-            # Debug print to check if text is being extracted
             print(f"Text from {pdf_file.filename}: {pdf_text[:100]}...")  # Only print first 100 characters for brevity
 
-            item_number = extract_item_number_from_file_name(pdf_file.filename)
             cycle_time = extract_cycle_time(pdf_text)
+            resultsArray.append({'fileName': pdf_file.filename, 'cycleTime': cycle_time})
 
-            if item_number:
-                matching_row = df.iloc[:, 1].astype(str).str.strip() == str(item_number).strip()
-                if matching_row.any():
-                    df.loc[matching_row, 'File Name'] = pdf_file.filename
-                    df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'
-                    print(f"Updated row with Item No. {item_number}: File Name = {pdf_file.filename}, TOTAL CYCLE TIME = {cycle_time}")
-                else:
-                    new_row = pd.DataFrame({'File Name': [pdf_file.filename], 
-                                            'TOTAL CYCLE TIME': [cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'], 
-                                            df.columns[1]: [item_number]})
-                    df = pd.concat([df, new_row], ignore_index=True)
-                    print(f"Added new row for PDF file: {pdf_file.filename}")
-            else:
-                print(f"Could not extract item number from PDF file name: {pdf_file.filename}")
         except Exception as e:
             return jsonify({"error": f"Error processing PDF file {pdf_file.filename}: {str(e)}"}), 400
+
+    excelData = df.values.tolist()
+
+    for result in resultsArray:
+        normalizedFileName = result['fileName'].lower().replace('.pdf', '')  # Adjust the extension as needed
+        rowIndex = next((index for index, row in enumerate(excelData) if row[0] and row[0].lower().replace('.pdf', '') == normalizedFileName), None)
+
+        if rowIndex is not None:
+            print(f"Updating row for {result['fileName']}")
+            excelData[rowIndex][1] = result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.'
+        else:
+            print(f"No match for {result['fileName']}, adding new row.")
+            newRow = [result['fileName'], result['cycleTime'] or 'No instances of "TOTAL CYCLE TIME" found.']
+            excelData.append(newRow)
+
+    # Convert back to DataFrame for saving
+    df = pd.DataFrame(excelData, columns=df.columns)
 
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
     df.to_excel(updated_excel_path, index=False)
@@ -91,14 +93,7 @@ def upload_files():
 
     return send_file(updated_excel_path, as_attachment=True, download_name='updated_excel.xlsx')
 
-def extract_item_number_from_file_name(file_name):
-    # More flexible regex for item number extraction
-    regex = r"(?i)item\s*(\d+)"  # Case insensitive match for 'item' followed by numbers
-    match = re.search(regex, file_name)
-    return match.group(1).strip() if match else None
-
 def extract_cycle_time(text):
-    # More flexible regex for cycle time extraction
     regex = r"(?i)total\s*cycle\s*time\s*:\s*(\d+\s*(?:hours?|hr)\s*,\s*\d+\s*(?:minutes?|min)\s*,\s*\d+\s*(?:seconds?|sec))"
     match = re.search(regex, text)
     return match.group(1).strip() if match else None
