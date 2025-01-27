@@ -36,9 +36,9 @@ def upload_files():
     except Exception as e:
         return f"Error reading Excel file: {e}"
 
-    # Ensure the Excel file has an "Item No." column
-    if 'Item No.' not in df.columns:
-        return "Excel file must have an 'Item No.' column."
+    # Ensure the Excel file has an "item No." column
+    if 'item No.' not in df.columns:
+        return "Excel file must have an 'item No.' column."
 
     # Add "File Name" and "TOTAL CYCLE TIME" columns if they don't exist
     if 'File Name' not in df.columns:
@@ -68,8 +68,8 @@ def upload_files():
         cycle_time = extract_cycle_time(pdf_text)
 
         if item_number:
-            # Match item number with the "Item No." column in Excel
-            matching_row = df['Item No.'] == item_number
+            # Match item number with the "item No." column in Excel
+            matching_row = df['item No.'] == item_number
 
             if matching_row.any():
                 # Update the "File Name" and "TOTAL CYCLE TIME" columns for the matching row
