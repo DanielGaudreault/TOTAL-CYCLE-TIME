@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, jsonify
 import pandas as pd
 from PyPDF2 import PdfReader
 import os
@@ -20,7 +20,7 @@ def index():
 def upload_files():
     # Check if files are uploaded
     if 'excel' not in request.files or 'pdf' not in request.files:
-        return "Please upload both Excel and PDF files."
+        return jsonify({"error": "Please upload both Excel and PDF files."}), 400
 
     excel_file = request.files['excel']
     pdf_files = request.files.getlist('pdf')
@@ -33,7 +33,7 @@ def upload_files():
     try:
         df = pd.read_excel(excel_path)
     except Exception as e:
-        return f"Error reading Excel file: {e}"
+        return jsonify({"error": f"Error reading Excel file: {e}"}), 400
 
     # Process each PDF file
     for pdf_file in pdf_files:
@@ -47,10 +47,13 @@ def upload_files():
             for page in pdf_reader.pages:
                 pdf_text += page.extract_text()
         except Exception as e:
-            return f"Error reading PDF file: {e}"
+            return jsonify({"error": f"Error reading PDF file: {e}"}), 400
 
-        # Update Excel file with PDF text
-        df['PDF_Text'] = pdf_text  # Add a new column with PDF text
+        # Extract TOTAL CYCLE TIME from PDF text
+        cycle_time = extract_cycle_time(pdf_text)
+        if cycle_time:
+            # Update Excel file with PDF file name and cycle time
+            df.loc[df['File Name'] == pdf_file.filename, 'TOTAL CYCLE TIME'] = cycle_time
 
     # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
@@ -58,6 +61,13 @@ def upload_files():
 
     # Provide download link
     return send_file(updated_excel_path, as_attachment=True)
+
+def extract_cycle_time(text):
+    # Use regex to find "TOTAL CYCLE TIME" and extract the time
+    import re
+    regex = r"TOTAL CYCLE TIME\s*:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)"
+    match = re.search(regex, text, re.IGNORECASE)
+    return match.group(1) if match else None
 
 if __name__ == '__main__':
     app.run(debug=True)
