@@ -7,14 +7,11 @@
     <link rel="stylesheet" href="styles.css">
     <script defer src="script.js"></script>
 </head>
-
 <body>
-    <h1>Upload Excel and PDF Files</h1>
+    <h1>Upload Files Containing PDFs</h1>
     <form id="upload-form" enctype="multipart/form-data">
-        <label for="excel-files">Select Excel Files:</label>
-        <input type="file" id="excel-files" name="excel-files" multiple accept=".xlsx"><br><br>
-        <label for="pdf-files">Select PDF Files:</label>
-        <input type="file" id="pdf-files" name="pdf-files" multiple accept=".pdf"><br><br>
+        <label for="files">Select Files:</label>
+        <input type="file" id="files" name="files" multiple><br><br>
         <button type="submit">Upload and Process</button>
     </form>
     <div id="results"></div>
