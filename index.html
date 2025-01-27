@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find TOTAL CYCLE TIME</title>
+    <title>Update Excel with TOTAL CYCLE TIME</title>
     <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Find "TOTAL CYCLE TIME" in Files and Update Excel</h1>
+        <h1>Update Excel with "TOTAL CYCLE TIME" from PDF and Text Files</h1>
         <input type="file" id="fileInput" accept=".txt,.pdf" multiple>
         <br><br>
         <input type="file" id="excelInput" accept=".xlsx, .xls">
@@ -20,6 +18,9 @@
         <pre id="results"></pre>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="script.js"></script> <!-- JavaScript file -->
 </body>
 </html>
