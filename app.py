@@ -25,7 +25,6 @@ def upload_files():
     excel_file = request.files['excel']
     pdf_files = request.files.getlist('pdf')
 
-    # Save Excel file temporarily
     excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
     excel_file.save(excel_path)
 
@@ -54,32 +53,30 @@ def upload_files():
             pdf_text = ""
             for page in pdf_reader.pages:
                 pdf_text += page.extract_text()
-        except Exception as e:
-            return jsonify({"error": f"Error reading PDF file {pdf_file.filename}: {str(e)}"}), 400
+            
+            # Debug print to check if text is being extracted
+            print(f"Text from {pdf_file.filename}: {pdf_text[:100]}...")  # Only print first 100 characters for brevity
 
-        # Extract Item Number from the file name
-        item_number = extract_item_number_from_file_name(pdf_file.filename)
+            item_number = extract_item_number_from_file_name(pdf_file.filename)
+            cycle_time = extract_cycle_time(pdf_text)
 
-        # Extract TOTAL CYCLE TIME from PDF text
-        cycle_time = extract_cycle_time(pdf_text)
-
-        if item_number:
-            matching_row = df.iloc[:, 1].astype(str).str.strip() == str(item_number).strip()
-            if matching_row.any():
-                df.loc[matching_row, 'File Name'] = pdf_file.filename
-                df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'
-                print(f"Updated row with Item No. {item_number}: File Name = {pdf_file.filename}, TOTAL CYCLE TIME = {cycle_time}")
+            if item_number:
+                matching_row = df.iloc[:, 1].astype(str).str.strip() == str(item_number).strip()
+                if matching_row.any():
+                    df.loc[matching_row, 'File Name'] = pdf_file.filename
+                    df.loc[matching_row, 'TOTAL CYCLE TIME'] = cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'
+                    print(f"Updated row with Item No. {item_number}: File Name = {pdf_file.filename}, TOTAL CYCLE TIME = {cycle_time}")
+                else:
+                    new_row = pd.DataFrame({'File Name': [pdf_file.filename], 
+                                            'TOTAL CYCLE TIME': [cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'], 
+                                            df.columns[1]: [item_number]})
+                    df = pd.concat([df, new_row], ignore_index=True)
+                    print(f"Added new row for PDF file: {pdf_file.filename}")
             else:
-                # Add new row if no match found
-                new_row = pd.DataFrame({'File Name': [pdf_file.filename], 
-                                        'TOTAL CYCLE TIME': [cycle_time or 'No instances of "TOTAL CYCLE TIME" found.'], 
-                                        df.columns[1]: [item_number]})
-                df = pd.concat([df, new_row], ignore_index=True)
-                print(f"Added new row for PDF file: {pdf_file.filename}")
-        else:
-            print(f"Could not extract item number from PDF file name: {pdf_file.filename}")
+                print(f"Could not extract item number from PDF file name: {pdf_file.filename}")
+        except Exception as e:
+            return jsonify({"error": f"Error processing PDF file {pdf_file.filename}: {str(e)}"}), 400
 
-    # Save updated Excel file
     updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
     df.to_excel(updated_excel_path, index=False)
 
@@ -92,19 +89,18 @@ def upload_files():
         except Exception as e:
             print(f'Failed to delete {file_path}. Reason: {e}')
 
-    # Provide download link
     return send_file(updated_excel_path, as_attachment=True, download_name='updated_excel.xlsx')
 
 def extract_item_number_from_file_name(file_name):
-    # Use regex to extract the item number from the file name
-    regex = r"Item\s*(\d+)"
-    match = re.search(regex, file_name, re.IGNORECASE)
+    # More flexible regex for item number extraction
+    regex = r"(?i)item\s*(\d+)"  # Case insensitive match for 'item' followed by numbers
+    match = re.search(regex, file_name)
     return match.group(1).strip() if match else None
 
 def extract_cycle_time(text):
-    # Use regex to find "TOTAL CYCLE TIME" and extract the time
-    regex = r"TOTAL CYCLE TIME\s*:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)"
-    match = re.search(regex, text, re.IGNORECASE)
+    # More flexible regex for cycle time extraction
+    regex = r"(?i)total\s*cycle\s*time\s*:\s*(\d+\s*(?:hours?|hr)\s*,\s*\d+\s*(?:minutes?|min)\s*,\s*\d+\s*(?:seconds?|sec))"
+    match = re.search(regex, text)
     return match.group(1).strip() if match else None
 
 if __name__ == '__main__':
