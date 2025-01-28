@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
+let results = []; // Store results for all files
+
+// Process selected files (PDFs or text)
 function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
@@ -82,6 +85,7 @@ function extractCycleTime(text) {
     return null; // Return null if no match is found
 }
 
+// Parse PDF content using pdf.js
 function parsePDF(data) {
     return new Promise((resolve, reject) => {
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -116,19 +120,16 @@ function parsePDF(data) {
     });
 }
 
+// Reset the results
 function resetResults() {
-    // Clear the results array
     results = [];
-
-    // Clear the table
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     resultsTable.innerHTML = '';
-
-    // Clear the file input (this needs to be done for each file input)
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadExcelInput').value = '';
 }
 
+// Update Excel with the summed cycle times
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
