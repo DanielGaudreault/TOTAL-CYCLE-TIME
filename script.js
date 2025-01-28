@@ -1,3 +1,5 @@
+let results = []; // Store results for files
+
 // Function to process both the Excel and PDF files
 function processFiles() {
     // Get uploaded files
@@ -12,6 +14,10 @@ function processFiles() {
     // Clear the results table before inserting new results
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     resultsTable.innerHTML = ''; // Clear the table
+
+    // Show loading indicator
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('downloadButton').style.display = 'none';
 
     // Read the Excel file
     const reader = new FileReader();
@@ -53,6 +59,7 @@ function processFiles() {
                 if (processedCount === pdfFiles.length) {
                     updateResultsTable(cycleTimes);
                     document.getElementById('downloadButton').style.display = 'inline-block';
+                    document.getElementById('loading').style.display = 'none';
                 }
             };
 
