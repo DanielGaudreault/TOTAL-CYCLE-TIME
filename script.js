@@ -112,7 +112,8 @@ function parsePDF(data) {
 
 function resetResults() {
     results = []; // Clear the results array
-    document.getElementById('resultsTable').getElementsByTagName('tbody')[0].innerHTML = ''; // Clear the table
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = ''; // Clear the table
     document.getElementById('downloadButton').style.display = 'none'; // Hide download button
 }
 
@@ -124,12 +125,12 @@ function downloadResults() {
     XLSX.writeFile(wb, 'cycle_times.xlsx');
 }
 
-function updateFromExcel() {
+function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
 
     if (!file) {
-        alert('Please select an Excel file.');
+        alert('Please select an Excel file to update.');
         return;
     }
 
@@ -143,19 +144,26 @@ function updateFromExcel() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        // Clear previous results
-        results = [];
+        // Update existing results with new data from Excel
+        jsonData.slice(1).forEach(row => {
+            if (row.length > 0) {
+                const existingResult = results.find(r => r.fileName === row[0]);
+                if (existingResult) {
+                    existingResult.cycleTime = row[1] || existingResult.cycleTime; // Update if new cycleTime is provided
+                } else {
+                    // If it's a new file, add to results
+                    results.push({ fileName: row[0], cycleTime: row[1] || 'Not Found' });
+                }
+            }
+        });
+
+        // Update the table
         const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
         resultsTable.innerHTML = '';
-
-        // Update results and table from Excel data
-        jsonData.slice(1).forEach(row => {
-            if (row.length > 0) { // Check if we have at least file name
-                results.push({ fileName: row[0], cycleTime: row[1] || 'Not Found' }); // Default to 'Not Found' if cycleTime is missing
-                const newRow = resultsTable.insertRow();
-                newRow.insertCell().textContent = row[0];
-                newRow.insertCell().textContent = row[1] || 'Not Found';
-            }
+        results.forEach(result => {
+            const newRow = resultsTable.insertRow();
+            newRow.insertCell().textContent = result.fileName;
+            newRow.insertCell().textContent = result.cycleTime || 'Not Found';
         });
 
         document.getElementById('downloadButton').style.display = 'block';
@@ -163,10 +171,10 @@ function updateFromExcel() {
     reader.readAsArrayBuffer(file);
 }
 
-// Event Listeners (Ensure these are added when the DOM is fully loaded)
+// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
     document.getElementById('downloadButton').addEventListener('click', downloadResults);
-    document.getElementById('uploadExcelButton').addEventListener('click', updateFromExcel);
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
