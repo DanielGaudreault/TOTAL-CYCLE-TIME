@@ -67,11 +67,6 @@ input[type="file"] {
     margin: 10px 0;
 }
 
-.download-btn {
-    display: none;
-    margin: 10px 0;
-}
-
 #resultsTable {
     width: 100%;
     border-collapse: collapse;
