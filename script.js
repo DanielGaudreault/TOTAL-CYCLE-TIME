@@ -41,19 +41,21 @@ function processFiles() {
             pdfReader.onload = async function (event) {
                 const pdfData = event.target.result;
                 const pdfText = await extractTextFromPDF(pdfData);
-                const projectName = extractProjectName(pdfText);  // Extract project name from PDF
-                const cycleTime = extractCycleTime(pdfText);  // Extract cycle time from PDF
+
+                // Extract information from the PDF
+                const projectName = extractProjectName(pdfText); // Extract project name (e.g. CNT2301)
+                const totalCycleTime = extractCycleTime(pdfText); // Extract total cycle time
+                const setupName = extractSetupName(pdfText); // Extract setup name (e.g. CNT2301 R1)
 
                 // Add the cycle time to the results table
-                cycleTimes.push({ filename: pdfFile.name, cycleTime: cycleTime });
+                cycleTimes.push({ filename: pdfFile.name, cycleTime: totalCycleTime });
 
-                // Find the row with the matching project name
+                // Find matching project names and update the corresponding rows
                 for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
                     if (rows[rowIndex][0] && rows[rowIndex][0].toLowerCase() === projectName.toLowerCase()) {
                         // Match found, update columns C and D
-                        rows[rowIndex][2] = pdfFile.name;  // Setup name in Column C
-                        rows[rowIndex][3] = cycleTime;     // Cycle time in Column D
-                        break; // Exit the loop once the match is found
+                        rows[rowIndex][2] = setupName;  // Setup name in Column C
+                        rows[rowIndex][3] = totalCycleTime;  // Cycle time in Column D
                     }
                 }
 
@@ -108,27 +110,32 @@ function extractTextFromPDF(pdfData) {
     });
 }
 
-// Extract the project name (or other identifying string) from PDF text
+// Extract the project name (e.g., CNT2301) from the PDF text
 function extractProjectName(text) {
-    const regex = /Project Name: (.+)/i; // This is a sample regex, adjust as needed based on your PDF format
+    const regex = /PROJECT NAME: (\w+)/i; // Match "PROJECT NAME: CNT2301"
     const match = text.match(regex);
     if (match && match[1]) {
-        return match[1].trim();
+        return match[1].trim(); // Extracted project name (e.g., CNT2301)
     }
-    return 'Not found';  // Return 'Not found' if no match is found
+    return 'Not found';
 }
 
-// Extract cycle time from text
+// Extract the total cycle time (e.g., 0 HOURS, 3 MINUTES, 8 SECONDS)
 function extractCycleTime(text) {
-    const lines = text.split('\n');
-    for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME")) {
-            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
-            const match = line.match(regex);
-            if (match) {
-                return match[0]; // Return the matched cycle time
-            }
-        }
+    const regex = /TOTAL CYCLE TIME: (\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i; 
+    const match = text.match(regex);
+    if (match && match[1]) {
+        return match[1]; // Extracted total cycle time
+    }
+    return 'Not found';
+}
+
+// Extract the setup name (e.g., CNT2301 R1)
+function extractSetupName(text) {
+    const regex = /PROJECT NAME: (\w+ \w+)/i; // This assumes "PROJECT NAME: CNT2301 R1"
+    const match = text.match(regex);
+    if (match && match[1]) {
+        return match[1]; // Setup name (e.g., CNT2301 R1)
     }
     return 'Not found';
 }
