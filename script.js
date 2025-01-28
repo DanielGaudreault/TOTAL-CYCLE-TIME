@@ -26,40 +26,53 @@ function processFiles() {
         let processedCount = 0;
         const cycleTimes = [];
 
-        // Process each PDF file
-        for (let i = 0; i < pdfFiles.length; i++) {
-            const pdfFile = pdfFiles[i];
-            const pdfReader = new FileReader();
-
-            pdfReader.onload = async function (event) {
-                const pdfData = event.target.result;
-                const pdfText = await extractTextFromPDF(pdfData);
-                const cycleTime = extractCycleTime(pdfText);
-
-                // Add the cycle time to the results table
-                cycleTimes.push({ filename: pdfFile.name, cycleTime });
-
-                // Find corresponding row in the Excel data
-                const rowIndex = i + 1; // Match PDF file with row in Excel sheet
-                if (rows[rowIndex]) {
-                    rows[rowIndex][2] = cycleTime; // Add cycle time to Column C (index 2)
-                }
-
-                processedCount++;
-
-                // If all files are processed, update the table and show download button
-                if (processedCount === pdfFiles.length) {
-                    updateResultsTable(cycleTimes);
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('downloadButton').style.display = 'inline-block';
-                }
-            };
-
-            pdfReader.readAsArrayBuffer(pdfFile);
-        }
+        // Process each PDF file one by one to avoid large memory load
+        let currentPdfIndex = 0;
+        processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount);
     };
 
     reader.readAsBinaryString(excelFile);
+}
+
+// Function to handle PDF files one at a time
+function processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount) {
+    if (currentPdfIndex >= pdfFiles.length) {
+        // All PDFs processed, update results table and show download button
+        updateResultsTable(cycleTimes);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('downloadButton').style.display = 'inline-block';
+        return;
+    }
+
+    const pdfFile = pdfFiles[currentPdfIndex];
+    const pdfReader = new FileReader();
+
+    pdfReader.onload = async function (event) {
+        const pdfData = event.target.result;
+        const pdfText = await extractTextFromPDF(pdfData);
+        const cycleTime = extractCycleTime(pdfText);
+
+        // Add the cycle time to the results table
+        cycleTimes.push({ filename: pdfFile.name, cycleTime });
+
+        // Find corresponding row in the Excel data
+        const rowIndex = currentPdfIndex + 1; // Match PDF file with row in Excel sheet
+        if (rows[rowIndex]) {
+            rows[rowIndex][2] = cycleTime; // Add cycle time to Column C (index 2)
+        }
+
+        processedCount++;
+        if (processedCount === pdfFiles.length) {
+            updateResultsTable(cycleTimes);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('downloadButton').style.display = 'inline-block';
+        }
+
+        // Recursively call the next PDF file
+        processNextPdf(currentPdfIndex + 1, pdfFiles, rows, cycleTimes, processedCount);
+    };
+
+    pdfReader.readAsArrayBuffer(pdfFile);
 }
 
 // Extract text from PDF using PDF.js
