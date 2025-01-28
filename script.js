@@ -163,6 +163,6 @@ function resetResults() {
     document.getElementById('excelFile').value = '';
     document.getElementById('pdfFiles').value = '';
 
-    // Clear any cycle times stored
+    // Reset results array
     results = [];
 }
