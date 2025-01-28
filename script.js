@@ -59,8 +59,12 @@ async function processFiles() {
 
 // Handle PDF extraction in parallel
 async function processPDFFiles(pdfFiles) {
-    try {
-        const cycleTimes = await Promise.all(Array.from(pdfFiles).map(async (pdfFile) => {
+    const batchSize = 5; // Process 5 files at a time
+    const cycleTimes = [];
+
+    for (let i = 0; i < pdfFiles.length; i += batchSize) {
+        const batch = Array.from(pdfFiles).slice(i, i + batchSize);
+        const batchResults = await Promise.all(batch.map(async (pdfFile) => {
             try {
                 const cycleData = await extractCycleDataFromPDF(pdfFile);
                 return cycleData;
@@ -69,11 +73,10 @@ async function processPDFFiles(pdfFiles) {
                 return { projectName: 'Error', totalCycleTime: 'Error', setupName: 'Error' };
             }
         }));
-        return cycleTimes;
-    } catch (error) {
-        console.error("Error processing PDF files:", error);
-        return [];
+        cycleTimes.push(...batchResults);
     }
+
+    return cycleTimes;
 }
 
 // Extract cycle data (project name, cycle time, setup name) from PDF
@@ -106,11 +109,13 @@ function readPDFFile(pdfFile) {
 function extractTextFromPDF(pdfData) {
     return new Promise((resolve, reject) => {
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });
 
         loadingTask.promise.then((pdf) => {
             let text = '';
-            const numPages = pdf.numPages;
+            const numPages = Math.min(pdf.numPages, 5); // Process only the first 5 pages
 
             const fetchPage = (pageNum) => {
                 return pdf.getPage(pageNum).then((page) => {
@@ -169,6 +174,8 @@ function extractSetupName(text) {
 // Update the results table with the cycle times
 function updateResultsTable(cycleTimes) {
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = ''; // Clear the table
+
     cycleTimes.forEach((result) => {
         const row = resultsTable.insertRow();
         row.insertCell().textContent = result.projectName;
