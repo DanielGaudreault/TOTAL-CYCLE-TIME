@@ -124,6 +124,10 @@ function extractCycleTime(text) {
 // Update the results table with cycle times
 function updateResultsTable(cycleTimes) {
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    
+    // Clear any previous results
+    resultsTable.innerHTML = '';
+
     cycleTimes.forEach((result) => {
         const row = resultsTable.insertRow();
         row.insertCell().textContent = result.filename;
