@@ -141,8 +141,7 @@ function updateToExcel() {
 
         // Process each result from the PDFs
         results.forEach(result => {
-            // Assuming the project name in the PDF is immediately followed by another identifier (like a number or code)
-            // Let's assume this identifier is the part of the filename after "Project Name -"
+            // Extract the part after 'Project Name -' from the PDF filename as the identifier
             const matchIdentifier = result.fileName.split('Project Name -')[1]?.trim();
             
             if (!matchIdentifier) {
@@ -150,28 +149,28 @@ function updateToExcel() {
                 return; // Skip this result if we can't find a match identifier
             }
 
-            // Try to find an existing row in the Excel sheet where the identifier matches the 'Item No.'
+            // Find the row in the Excel sheet with matching 'Item No.'
             const matchingRowIndex = excelRows.findIndex(row => row[0]?.toString().trim() === matchIdentifier);
 
             if (matchingRowIndex !== -1) {
-                // Match found, update existing row
+                // Match found, update the existing row
                 excelRows[matchingRowIndex] = {
                     ...excelRows[matchingRowIndex],
                     2: 'Setup Number', // Column C for Setup Number
                     3: result.cycleTime || 'Not Found' // Column D for Total Cycle Time
                 };
             } else {
-                // No match found, add new row
+                // No match found, add a new row
                 excelRows.push({
                     'Item No.': matchIdentifier, // Assuming 'Item No.' column A
-                    '': '', // B might be something else, keeping it blank
-                    'Setup Number': 'Setup Number',  // C - Setup Number
-                    'Total Cycle Time': result.cycleTime || 'Not Found' // D - Total Cycle Time
+                    '': '', // Column B, assuming it's blank or something else
+                    'Setup Number': 'Setup Number', // Column C
+                    'Total Cycle Time': result.cycleTime || 'Not Found' // Column D
                 });
             }
         });
 
-        // Convert back to a worksheet format
+        // Convert the updated data back to worksheet format
         const newWS = XLSX.utils.json_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
