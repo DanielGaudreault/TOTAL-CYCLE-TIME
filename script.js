@@ -46,7 +46,8 @@ function processFiles() {
                 // Add the cycle time to the results table
                 cycleTimes.push({ filename: pdfFile.name, cycleTime: cycleTime });
 
-                // Add the extracted cycle time and setup name to the corresponding row in the Excel data
+                // Match each PDF to the corresponding row
+                // Assuming that the order of the files should match the rows
                 const rowIndex = i + 1; // Adjust row index based on your needs
                 if (rows[rowIndex]) {
                     rows[rowIndex][2] = pdfFile.name;  // Column C: Setup name (PDF file name)
