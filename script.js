@@ -127,11 +127,60 @@ function resetResults() {
 }
 
 function downloadResults() {
-    // Convert results to Excel
-    const ws = XLSX.utils.json_to_sheet(results);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Results');
-    XLSX.writeFile(wb, 'cycle_times.xlsx');
+    const fileInput = document.getElementById('uploadExcelInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        // If no file has been uploaded, just download the results from PDFs
+        const ws = XLSX.utils.json_to_sheet(results.map(result => ({
+            'Item No.': result.fileName.split('Project Name -')[1]?.trim() || result.fileName,
+            'Setup Number': 'Setup Number', 
+            'Total Cycle Time': result.cycleTime || 'Not Found'
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Results');
+        XLSX.writeFile(wb, 'cycle_times.xlsx');
+    } else {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            let worksheet = workbook.Sheets[sheetName];
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+            // Update with results from PDFs
+            results.forEach(result => {
+                const matchIdentifier = result.fileName.split('Project Name -')[1]?.trim() || result.fileName;
+                const matchingRowIndex = excelRows.findIndex(row => row[0]?.toString().trim() === matchIdentifier);
+
+                if (matchingRowIndex !== -1) {
+                    excelRows[matchingRowIndex] = {
+                        ...excelRows[matchingRowIndex],
+                        2: 'Setup Number', // Assuming 'Setup Number' should be in column C
+                        3: result.cycleTime || 'Not Found' // Assuming 'Total Cycle Time' should be in column D
+                    };
+                } else {
+                    // If no match, add new row
+                    excelRows.push({
+                        'Item No.': matchIdentifier,
+                        '': '', // Assuming column B is blank or something else, adjust if necessary
+                        'Setup Number': 'Setup Number',
+                        'Total Cycle Time': result.cycleTime || 'Not Found'
+                    });
+                }
+            });
+
+            // Convert back to worksheet
+            const updatedWS = XLSX.utils.json_to_sheet(excelRows);
+            const updatedWB = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(updatedWB, updatedWS, sheetName);
+
+            // Save the updated workbook
+            XLSX.writeFile(updatedWB, 'cycle_times.xlsx');
+        };
+        reader.readAsArrayBuffer(file);
+    }
 }
 
 function updateToExcel() {
@@ -181,37 +230,4 @@ function updateToExcel() {
                     '', // B might be something else, keeping it blank
                     'Setup Number',  // C - Setup Number
                     result.cycleTime || 'Not Found', // D - Total Cycle Time
-                    ...Array(excelRows[0].length - 4).fill('') // Fill rest with blanks to match row length
-                ]);
-            }
-        });
-
-        // Convert back to a worksheet format
-        const newWS = XLSX.utils.aoa_to_sheet(excelRows.map(row => Object.values(row)));
-        const newWB = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-
-        // Save the new workbook
-        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-
-        // Update the table on the page if needed
-        const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-        resultsTable.innerHTML = '';
-        results.forEach(result => {
-            const newRow = resultsTable.insertRow();
-            newRow.insertCell().textContent = result.fileName;
-            newRow.insertCell().textContent = result.cycleTime || 'Not Found';
-        });
-
-        document.getElementById('downloadButton').style.display = 'block';
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('processButton').addEventListener('click', processFiles);
-    document.getElementById('resetButton').addEventListener('click', resetResults);
-    document.getElementById('downloadButton').addEventListener('click', downloadResults);
-    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
-});
+                    ...Array(excelRows[0].length - 4).fill('') // Fill rest...
