@@ -3,50 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find "TOTAL CYCLE TIME"</title>
+    <title>Cycle Time Updater</title>
     <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
     <div class="container">
-        <h1>Find "TOTAL CYCLE TIME" in Files</h1>
-        
-        <div>
-            <label for="excelFile">Upload Excel File:</label>
-            <input type="file" id="excelFile" accept=".xlsx">
-        </div>
+        <h1>Cycle Time Updater</h1>
 
-        <div>
-            <label for="pdfFiles">Upload PDF Files:</label>
-            <input type="file" id="pdfFiles" accept=".pdf" multiple>
-        </div>
+        <!-- Excel File Input -->
+        <input type="file" id="excelFile" accept=".xlsx" />
+        <br><br>
 
-        <br>
+        <!-- PDF Files Input -->
+        <input type="file" id="pdfFiles" accept=".pdf" multiple />
+        <br><br>
 
+        <!-- Process Files Button -->
         <button onclick="processFiles()">Process Files</button>
-        <button id="resetButton" onclick="resetResults()">Reset Results</button>
+        <br><br>
 
-        <div id="loading" style="display: none;">Processing... Please wait.</div>
-        
+        <!-- Loading Indicator -->
+        <div id="loading" style="display: none;">Processing...</div>
+
+        <!-- Results Table -->
         <h2>Results:</h2>
         <table id="resultsTable">
             <thead>
                 <tr>
                     <th>File Name</th>
-                    <th>TOTAL CYCLE TIME</th>
+                    <th>Total Cycle Time</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Results will be added here -->
+                <!-- Results will be inserted here -->
             </tbody>
         </table>
-        <br>
-        <button id="downloadButton" style="display: none;" onclick="downloadUpdatedExcel()">Download Updated Excel</button>
+
+        <!-- Download Button -->
+        <button id="downloadButton" style="display: none;" onclick="downloadExcel()">Download Updated Excel</button>
+
+        <!-- Reset Button -->
+        <button onclick="resetResults()">Reset Results</button>
     </div>
 
+    <!-- SheetJS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- SheetJS Library for Excel Download -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="script.js"></script> <!-- JavaScript file -->
+    <script src="script.js"></script>
 </body>
 </html>
