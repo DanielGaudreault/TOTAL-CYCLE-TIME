@@ -9,25 +9,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <h1>File Processor</h1>
-    <input type="file" id="fileInput" multiple>
-    <button id="processButton">Process Files</button>
-    <button id="resetButton">Reset Results</button>
-    <div id="loading">Processing...</div>
-    <button id="downloadButton" style="display: none;">Download Results</button>
-    <div class="upload-section">
-        <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
-        <button id="uploadExcelButton">Update to Excel</button>
+    <div class="container">
+        <h1>File Processor</h1>
+        <div class="file-section">
+            <input type="file" id="fileInput" multiple>
+            <button id="processButton">Process Files</button>
+            <button id="resetButton">Reset Results</button>
+        </div>
+        <div id="loading" class="loading">Processing...</div>
+        <button id="downloadButton" class="download-btn">Download Results</button>
+        <div class="upload-section">
+            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
+            <button id="uploadExcelButton">Update to Excel</button>
+        </div>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Total Cycle Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
-    <table id="resultsTable">
-        <thead>
-            <tr>
-                <th>File Name</th>
-                <th>Total Cycle Time</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
 
     <script src="script.js"></script>
 </body>
