@@ -1,107 +1,53 @@
-from flask import Flask, request, jsonify, send_file
-import pandas as pd
-import fitz  # PyMuPDF for PDF processing
 import os
-import re
+import pandas as pd
+import pdfplumber  # For PDF extraction
 
-app = Flask(__name__)
+# Function to extract data from a PDF file
+def extract_data_from_pdf(pdf_path):
+    item_no = None
+    setup_no = None
+    cycle_time = None
 
-# Ensure the uploads directory exists
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                # Example logic to extract data (customize based on your PDF structure)
+                if "Item No:" in text:
+                    item_no = text.split("Item No:")[1].split()[0]
+                if "Setup No:" in text:
+                    setup_no = text.split("Setup No:")[1].split()[0]
+                if "Cycle Time:" in text:
+                    cycle_time = text.split("Cycle Time:")[1].split()[0]
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    return item_no, setup_no, cycle_time
 
-def extract_text_from_pdf(pdf_path):
-    """Extract text from a PDF file."""
-    pdf_document = fitz.open(pdf_path)
-    text = ""
-    for page_num in range(pdf_document.page_count):
-        page = pdf_document.load_page(page_num)
-        text += page.get_text()
-    return text
+# Function to update the Excel sheet
+def update_excel_with_pdf_data(excel_path, pdf_folder):
+    # Load the Excel file
+    df = pd.read_excel(excel_path)
 
-def extract_cycle_time(text):
-    """Extract the 'TOTAL CYCLE TIME' from the text."""
-    lines = text.split('\n')
-    for line in lines:
-        if "TOTAL CYCLE TIME" in line:
-            regex = r"(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)"
-            match = re.search(regex, line, re.IGNORECASE)
-            return match.group(0) if match else None
-    return None
+    # Loop through the PDF folder
+    for pdf_file in os.listdir(pdf_folder):
+        if pdf_file.endswith(".pdf"):
+            pdf_path = os.path.join(pdf_folder, pdf_file)
+            item_no, setup_no, cycle_time = extract_data_from_pdf(pdf_path)
 
-def extract_part_number(text):
-    """Extract the part number from the text."""
-    regex = r"Part Number\s*:\s*(\w+)"
-    match = re.search(regex, text, re.IGNORECASE)
-    return match.group(1) if match else None
+            if item_no:
+                # Find the row in the DataFrame that matches the item number
+                match_index = df.index[df["Item No."] == item_no].tolist()
+                if match_index:
+                    # Update the setup number and cycle time
+                    df.at[match_index[0], "Setup No."] = setup_no
+                    df.at[match_index[0], "Cycle Time"] = cycle_time
 
-@app.route('/process-files', methods=['POST'])
-def process_files():
-    try:
-        # Check if files are uploaded
-        if 'files' not in request.files or 'excel' not in request.files:
-            return jsonify({"error": "Please upload both Excel and PDF files."}), 400
+    # Save the updated DataFrame back to the Excel file
+    df.to_excel(excel_path, index=False)
 
-        # Save the Excel file
-        excel_file = request.files['excel']
-        excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
-        excel_file.save(excel_path)
+# Main execution
+if __name__ == "__main__":
+    excel_file_path = "path/to/your/excel_file.xlsx"  # Replace with your Excel file path
+    pdf_folder_path = "path/to/your/pdf_folder"  # Replace with your PDF folder path
 
-        # Read the Excel file
-        try:
-            df = pd.read_excel(excel_path)
-        except Exception as e:
-            return jsonify({"error": f"Error reading Excel file: {e}"}), 400
-
-        # Ensure the Excel file has the required columns
-        if 'File Name' not in df.columns or 'Part Number' not in df.columns or 'TOTAL CYCLE TIME' not in df.columns:
-            return jsonify({"error": "Excel file must contain 'File Name', 'Part Number', and 'TOTAL CYCLE TIME' columns."}), 400
-
-        # Process each uploaded file
-        for file in request.files.getlist('files'):
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(file_path)
-
-            # Extract text from the file
-            if file.filename.lower().endswith('.pdf'):
-                text = extract_text_from_pdf(file_path)
-            else:
-                with open(file_path, 'r') as f:
-                    text = f.read()
-
-            # Extract the cycle time
-            cycle_time = extract_cycle_time(text)
-            if cycle_time:
-                # Match the file name or part number with the Excel row
-                file_name = file.filename
-                part_number = extract_part_number(text)  # Extract part number from the file
-
-                # Update the matching row in the Excel file
-                if file_name in df['File Name'].values:
-                    df.loc[df['File Name'] == file_name, 'TOTAL CYCLE TIME'] = cycle_time
-                elif part_number and part_number in df['Part Number'].values:
-                    df.loc[df['Part Number'] == part_number, 'TOTAL CYCLE TIME'] = cycle_time
-                else:
-                    # Add new row if no match found
-                    new_row = pd.DataFrame({
-                        'File Name': [file_name],
-                        'Part Number': [part_number or 'Unknown'],
-                        'TOTAL CYCLE TIME': [cycle_time]
-                    })
-                    df = pd.concat([df, new_row], ignore_index=True)
-
-        # Save the updated Excel file
-        updated_excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'updated_excel.xlsx')
-        df.to_excel(updated_excel_path, index=False)
-
-        # Provide download link for the updated Excel file
-        return send_file(updated_excel_path, as_attachment=True, download_name='updated_excel.xlsx')
-
-    except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    update_excel_with_pdf_data(excel_file_path, pdf_folder_path)
+    print("Excel file updated successfully!")
