@@ -3,48 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Excel and PDFs</title>
+    <title>Process Excel and PDF Files</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
-    <h1>Upload Excel File and PDFs</h1>
+    <div class="container">
+        <h1>Upload Excel File and PDFs</h1>
 
-    <form id="uploadForm" enctype="multipart/form-data" method="POST">
-        <label for="excelFile">Upload Excel File:</label>
-        <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required><br><br>
+        <!-- Form to upload files -->
+        <input type="file" id="excelFile" accept=".xlsx, .xls" required><br><br>
+        <input type="file" id="pdfFiles" accept=".pdf" multiple required><br><br>
+        <button onclick="processFiles()">Process Files</button>
 
-        <label for="pdfFolder">Upload PDFs:</label>
-        <input type="file" id="pdfFolder" name="pdfFolder[]" accept=".pdf" multiple required><br><br>
+        <h2>Results:</h2>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Cycle Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Results will be inserted here -->
+            </tbody>
+        </table>
 
-        <button type="submit">Upload Files</button>
-    </form>
+        <br><br>
+        <button id="downloadButton" style="display:none;" onclick="downloadExcel()">Download Updated Excel</button>
+    </div>
 
-    <div id="result"></div>
+    <!-- Include PDF.js and SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <script>
-        // Handle form submission
-        document.getElementById('uploadForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            let formData = new FormData();
-            formData.append('excelFile', document.getElementById('excelFile').files[0]);
-            let pdfFiles = document.getElementById('pdfFolder').files;
-            for (let i = 0; i < pdfFiles.length; i++) {
-                formData.append('pdfFolder[]', pdfFiles[i]);
-            }
-
-            // Make the POST request to the Python server
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('result').innerHTML = 'Processing Complete: ' + data.message;
-            })
-            .catch(error => {
-                document.getElementById('result').innerHTML = 'Error occurred: ' + error;
-            });
-        });
-    </script>
+    <!-- Your custom script -->
+    <script src="script.js"></script>
 </body>
 </html>
