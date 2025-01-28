@@ -111,10 +111,19 @@ function parsePDF(data) {
 }
 
 function resetResults() {
-    results = []; // Clear the results array
+    // Clear the results array
+    results = [];
+
+    // Clear the table
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = ''; // Clear the table
-    document.getElementById('downloadButton').style.display = 'none'; // Hide download button
+    resultsTable.innerHTML = '';
+
+    // Hide the download button
+    document.getElementById('downloadButton').style.display = 'none';
+
+    // Clear the file input (this needs to be done for each file input)
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadExcelInput').value = '';
 }
 
 function downloadResults() {
