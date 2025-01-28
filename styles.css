@@ -1,17 +1,28 @@
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #e6f3ff; /* Light blue background */
+    background-color: #f0f8ff; /* Light blue background for a cleaner look */
     color: #333;
     margin: 0;
-    padding: 20px;
+    padding: 0;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 1000px;
 }
 
 h1 {
     color: #0066cc;
     text-align: center;
+    margin-bottom: 20px;
 }
 
 button {
@@ -19,39 +30,58 @@ button {
     color: white;
     border: none;
     padding: 10px 20px;
-    margin: 10px 0;
+    margin: 5px;
     cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.1s;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 button:hover {
     background-color: #004c99;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.file-section, .upload-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
 }
 
 input[type="file"] {
-    margin: 10px 0;
+    flex-grow: 1;
+    margin-right: 10px;
 }
 
 #loading {
+    display: none;
+    text-align: center;
     color: #0066cc;
     font-style: italic;
+    margin: 10px 0;
+}
+
+.download-btn {
     display: none;
+    margin: 10px 0;
 }
 
 #resultsTable {
     width: 100%;
-    max-width: 800px;
-    margin-top: 20px;
     border-collapse: collapse;
-    background-color: white;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
 }
 
 #resultsTable th, #resultsTable td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 #resultsTable th {
@@ -63,11 +93,13 @@ input[type="file"] {
     background-color: #f2f2f2;
 }
 
-#downloadButton, #uploadExcelButton {
-    margin: 10px 0;
-}
-
-.upload-section {
-    margin-top: 20px;
-    text-align: center;
+@media (max-width: 600px) {
+    .file-section, .upload-section {
+        flex-direction: column;
+    }
+    
+    input[type="file"], button {
+        width: 100%;
+        margin: 5px 0;
+    }
 }
