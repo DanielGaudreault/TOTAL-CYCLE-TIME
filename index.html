@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Process Excel and PDF Files</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
+    <title>Excel & PDF Processor</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Upload Excel File and PDFs</h1>
-
-        <!-- Form to upload files -->
-        <input type="file" id="excelFile" accept=".xlsx, .xls" required><br><br>
-        <input type="file" id="pdfFiles" accept=".pdf" multiple required><br><br>
+        <h1>Process Files: Update Excel Sheet with PDF Cycle Times</h1>
+        
+        <!-- Input to select multiple Excel and PDF files -->
+        <input type="file" id="excelFile" accept=".xlsx" />
+        <br>
+        <input type="file" id="pdfFiles" accept=".pdf" multiple />
+        <br>
         <button onclick="processFiles()">Process Files</button>
-
+        
+        <div id="loading" style="display: none;">Processing... Please wait.</div>
+        
+        <!-- Table to display processing results -->
         <h2>Results:</h2>
         <table id="resultsTable">
             <thead>
@@ -23,20 +28,17 @@
                     <th>Cycle Time</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Results will be inserted here -->
-            </tbody>
+            <tbody></tbody>
         </table>
-
-        <br><br>
-        <button id="downloadButton" style="display:none;" onclick="downloadExcel()">Download Updated Excel</button>
+        
+        <br>
+        <button id="downloadButton" style="display: none;" onclick="downloadUpdatedExcel()">Download Updated Excel</button>
     </div>
 
-    <!-- Include PDF.js and SheetJS -->
+    <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- SheetJS Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <!-- Your custom script -->
-    <script src="script.js"></script>
+    <script src="script.js"></script> <!-- Your script -->
 </body>
 </html>
