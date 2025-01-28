@@ -46,10 +46,11 @@ function processFiles() {
                 // Add the cycle time to the results table
                 cycleTimes.push({ filename: pdfFile.name, cycleTime: cycleTime });
 
-                // Add the extracted cycle time to the corresponding row in the Excel data
+                // Add the extracted cycle time and setup name to the corresponding row in the Excel data
                 const rowIndex = i + 1; // Adjust row index based on your needs
                 if (rows[rowIndex]) {
-                    rows[rowIndex][2] = cycleTime; // Put cycle time in Column C (index 2)
+                    rows[rowIndex][2] = pdfFile.name;  // Column C: Setup name (PDF file name)
+                    rows[rowIndex][3] = cycleTime;    // Column D: Cycle Time
                 }
 
                 processedCount++;
@@ -123,8 +124,8 @@ function updateResultsTable(cycleTimes) {
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     cycleTimes.forEach((result) => {
         const row = resultsTable.insertRow();
-        row.insertCell().textContent = result.filename;
-        row.insertCell().textContent = result.cycleTime;
+        row.insertCell().textContent = result.filename;  // PDF file name
+        row.insertCell().textContent = result.cycleTime;  // Cycle time extracted
     });
 }
 
