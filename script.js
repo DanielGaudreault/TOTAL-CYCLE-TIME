@@ -41,17 +41,20 @@ function processFiles() {
             pdfReader.onload = async function (event) {
                 const pdfData = event.target.result;
                 const pdfText = await extractTextFromPDF(pdfData);
-                const cycleTime = extractCycleTime(pdfText);
+                const projectName = extractProjectName(pdfText);  // Extract project name from PDF
+                const cycleTime = extractCycleTime(pdfText);  // Extract cycle time from PDF
 
                 // Add the cycle time to the results table
                 cycleTimes.push({ filename: pdfFile.name, cycleTime: cycleTime });
 
-                // Match each PDF to the corresponding row
-                // Assuming that the order of the files should match the rows
-                const rowIndex = i + 1; // Adjust row index based on your needs
-                if (rows[rowIndex]) {
-                    rows[rowIndex][2] = pdfFile.name;  // Column C: Setup name (PDF file name)
-                    rows[rowIndex][3] = cycleTime;    // Column D: Cycle Time
+                // Find the row with the matching project name
+                for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+                    if (rows[rowIndex][0] && rows[rowIndex][0].toLowerCase() === projectName.toLowerCase()) {
+                        // Match found, update columns C and D
+                        rows[rowIndex][2] = pdfFile.name;  // Setup name in Column C
+                        rows[rowIndex][3] = cycleTime;     // Cycle time in Column D
+                        break; // Exit the loop once the match is found
+                    }
                 }
 
                 processedCount++;
@@ -103,6 +106,16 @@ function extractTextFromPDF(pdfData) {
             fetchAllPages();
         }).catch(reject);
     });
+}
+
+// Extract the project name (or other identifying string) from PDF text
+function extractProjectName(text) {
+    const regex = /Project Name: (.+)/i; // This is a sample regex, adjust as needed based on your PDF format
+    const match = text.match(regex);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return 'Not found';  // Return 'Not found' if no match is found
 }
 
 // Extract cycle time from text
