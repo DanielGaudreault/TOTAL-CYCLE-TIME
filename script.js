@@ -148,7 +148,11 @@ function downloadUpdatedExcel() {
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(blob);
         downloadLink.download = 'updated_cycle_times.xlsx';
+
+        // Ensure the download link is properly triggered
+        document.body.appendChild(downloadLink);
         downloadLink.click();
+        document.body.removeChild(downloadLink);  // Clean up after the download
     };
 
     reader.readAsBinaryString(excelFile);
