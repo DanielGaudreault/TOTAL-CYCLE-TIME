@@ -138,8 +138,13 @@ function downloadExcel() {
         const updatedWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
-        // Generate and download the updated Excel file
-        XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
+        // Write and trigger download
+        try {
+            XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
+        } catch (error) {
+            alert("An error occurred while generating the Excel file. Please try again.");
+            console.error(error);
+        }
     };
 
     reader.readAsBinaryString(excelFile);
