@@ -17,45 +17,49 @@ function processFiles() {
     downloadButton.style.display = 'none';
     loading.style.display = 'block';
 
-    // Process each file
     const files = Array.from(fileInput.files);
-    let processedCount = 0;
 
-    files.forEach((file, index) => {
+    const promises = files.map(file => {
         const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+            reader.onload = async function (event) {
+                const content = event.target.result;
+                let cycleTime = null;
 
-        reader.onload = async function (event) {
-            const content = event.target.result;
-            let cycleTime = null;
+                if (file.type === 'application/pdf') {
+                    // Handle PDF files
+                    const text = await parsePDF(content);
+                    cycleTime = extractCycleTime(text);
+                } else {
+                    // Handle text files
+                    cycleTime = extractCycleTime(content);
+                }
+
+                // Add result to the table
+                results.push({ fileName: file.name, cycleTime });
+                const row = resultsTable.insertRow();
+                row.insertCell().textContent = file.name;
+                row.insertCell().textContent = cycleTime || 'Not Found';
+
+                resolve(); // Signal that this file has been processed
+            };
+
+            reader.onerror = reject;
 
             if (file.type === 'application/pdf') {
-                // Handle PDF files
-                const text = await parsePDF(content);
-                cycleTime = extractCycleTime(text);
+                reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
             } else {
-                // Handle text files
-                cycleTime = extractCycleTime(content);
+                reader.readAsText(file); // Read text files as text
             }
+        });
+    });
 
-            // Add result to the table
-            results.push({ fileName: file.name, cycleTime });
-            const row = resultsTable.insertRow();
-            row.insertCell().textContent = file.name;
-            row.insertCell().textContent = cycleTime || 'Not Found';
-
-            processedCount++;
-            if (processedCount === files.length) {
-                // All files processed
-                loading.style.display = 'none';
-                downloadButton.style.display = 'block';
-            }
-        };
-
-        if (file.type === 'application/pdf') {
-            reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
-        } else {
-            reader.readAsText(file); // Read text files as text
-        }
+    Promise.all(promises).then(() => {
+        loading.style.display = 'none';
+        downloadButton.style.display = 'block';
+    }).catch(error => {
+        console.error("File processing failed:", error);
+        loading.style.display = 'none';
     });
 }
 
@@ -106,6 +110,12 @@ function parsePDF(data) {
     });
 }
 
+function resetResults() {
+    results = []; // Clear the results array
+    document.getElementById('resultsTable').getElementsByTagName('tbody')[0].innerHTML = ''; // Clear the table
+    document.getElementById('downloadButton').style.display = 'none'; // Hide download button
+}
+
 function downloadResults() {
     // Convert results to Excel
     const ws = XLSX.utils.json_to_sheet(results);
@@ -113,3 +123,10 @@ function downloadResults() {
     XLSX.utils.book_append_sheet(wb, ws, 'Results');
     XLSX.writeFile(wb, 'cycle_times.xlsx');
 }
+
+// Event Listeners (make sure these are added in the HTML or when the DOM is fully loaded)
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('processButton').addEventListener('click', processFiles);
+    document.getElementById('resetButton').addEventListener('click', resetResults);
+    document.getElementById('downloadButton').addEventListener('click', downloadResults);
+});
