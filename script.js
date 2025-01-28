@@ -49,16 +49,31 @@ async function processFiles() {
         document.getElementById('loading').style.display = 'none';
     };
 
+    reader.onerror = function (event) {
+        console.error("Error reading Excel file:", event.target.error);
+        alert("Error reading Excel file. Please ensure the file is valid.");
+    };
+
     reader.readAsBinaryString(excelFile); // Read Excel file
 }
 
 // Handle PDF extraction in parallel
 async function processPDFFiles(pdfFiles) {
-    const cycleTimes = await Promise.all(Array.from(pdfFiles).map(async (pdfFile) => {
-        const cycleData = await extractCycleDataFromPDF(pdfFile);
-        return cycleData;
-    }));
-    return cycleTimes;
+    try {
+        const cycleTimes = await Promise.all(Array.from(pdfFiles).map(async (pdfFile) => {
+            try {
+                const cycleData = await extractCycleDataFromPDF(pdfFile);
+                return cycleData;
+            } catch (error) {
+                console.error("Error processing PDF file:", error);
+                return { projectName: 'Error', totalCycleTime: 'Error', setupName: 'Error' };
+            }
+        }));
+        return cycleTimes;
+    } catch (error) {
+        console.error("Error processing PDF files:", error);
+        return [];
+    }
 }
 
 // Extract cycle data (project name, cycle time, setup name) from PDF
@@ -143,7 +158,7 @@ function extractCycleTime(text) {
 
 // Extract the setup name from the PDF text
 function extractSetupName(text) {
-    const regex = /PROJECT NAME: ([A-Za-z0-9]+(?:\s*[A-Za-z0-9]+)*)/i; // Example: PROJECT NAME: CNT2301 R1
+    const regex = /SETUP NAME:\s*([A-Za-z0-9]+(?:\s*[A-Za-z0-9]+)*)/i; // Example: SETUP NAME: CNT2301 R1
     const match = text.match(regex);
     if (match && match[1]) {
         return match[1];
