@@ -27,9 +27,7 @@ async function processFiles() {
         excelRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         // Handle PDF extraction concurrently
-        const cycleTimes = await Promise.all(Array.from(pdfFiles).map((pdfFile) => {
-            return extractCycleDataFromPDF(pdfFile);
-        }));
+        const cycleTimes = await processPDFFiles(pdfFiles);
 
         // Now process extracted PDF data
         cycleTimes.forEach((cycleData) => {
@@ -52,6 +50,15 @@ async function processFiles() {
     };
 
     reader.readAsBinaryString(excelFile); // Read Excel file
+}
+
+// Handle PDF extraction in parallel
+async function processPDFFiles(pdfFiles) {
+    const cycleTimes = await Promise.all(Array.from(pdfFiles).map(async (pdfFile) => {
+        const cycleData = await extractCycleDataFromPDF(pdfFile);
+        return cycleData;
+    }));
+    return cycleTimes;
 }
 
 // Extract cycle data (project name, cycle time, setup name) from PDF
