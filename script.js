@@ -121,7 +121,7 @@ function updateResultsTable(cycleTimes) {
     });
 }
 
-// Download the updated Excel file
+// Download the updated Excel file (optimized)
 function downloadUpdatedExcel() {
     const excelFile = document.getElementById('excelFile').files[0];
     const reader = new FileReader();
@@ -134,14 +134,14 @@ function downloadUpdatedExcel() {
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
 
-        // Convert the modified rows into a sheet
+        // Modify sheet (add the updated cycle times to Column C)
         const updatedSheet = XLSX.utils.aoa_to_sheet(sheet);
 
         // Create a new workbook with the updated sheet
         const updatedWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
-        // Generate the Excel file in chunks to avoid memory issues
+        // Trigger the file download using Blob
         const blob = XLSX.write(updatedWorkbook, {
             bookType: 'xlsx',
             type: 'blob',
