@@ -9,6 +9,10 @@ function processFiles() {
         return;
     }
 
+    // Clear the results table before inserting new results
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = ''; // Clear the table
+
     // Read the Excel file
     const reader = new FileReader();
     reader.onload = function (event) {
@@ -143,4 +147,22 @@ function downloadExcel() {
     };
 
     reader.readAsBinaryString(excelFile);
+}
+
+// Reset results function to clear the table and reset the form
+function resetResults() {
+    // Clear the results table
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = '';
+
+    // Hide the download button and reset loading state
+    document.getElementById('downloadButton').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+
+    // Reset the file input fields
+    document.getElementById('excelFile').value = '';
+    document.getElementById('pdfFiles').value = '';
+
+    // Clear any cycle times stored
+    results = [];
 }
