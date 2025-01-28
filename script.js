@@ -162,18 +162,17 @@ function updateToExcel() {
                 };
             } else {
                 // No match found, add new row
-                excelRows.push([
-                    matchIdentifier, // Assuming 'Item No.' column A
-                    '', // B might be something else, keeping it blank
-                    'Setup Number',  // C - Setup Number
-                    result.cycleTime || 'Not Found', // D - Total Cycle Time
-                    ...Array(excelRows[0].length - 4).fill('') // Fill rest with blanks to match row length
-                ]);
+                excelRows.push({
+                    'Item No.': matchIdentifier, // Assuming 'Item No.' column A
+                    '': '', // B might be something else, keeping it blank
+                    'Setup Number': 'Setup Number',  // C - Setup Number
+                    'Total Cycle Time': result.cycleTime || 'Not Found' // D - Total Cycle Time
+                });
             }
         });
 
         // Convert back to a worksheet format
-        const newWS = XLSX.utils.aoa_to_sheet(excelRows.map(row => Object.values(row)));
+        const newWS = XLSX.utils.json_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
