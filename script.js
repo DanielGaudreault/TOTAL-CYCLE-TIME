@@ -1,3 +1,5 @@
+let results = []; // Store results for all files
+
 // Function to process both Excel and PDF files
 function processFiles() {
     const excelFile = document.getElementById('excelFile').files[0];
@@ -168,4 +170,22 @@ function downloadUpdatedExcel() {
     };
 
     reader.readAsBinaryString(excelFile);
+}
+
+// Reset Results function to clear the table and reset the form
+function resetResults() {
+    // Clear the results table
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = '';
+
+    // Hide the download button and reset loading state
+    document.getElementById('downloadButton').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+
+    // Reset the file input fields
+    document.getElementById('excelFile').value = '';
+    document.getElementById('pdfFiles').value = '';
+
+    // Clear any cycle times stored
+    results = [];
 }
