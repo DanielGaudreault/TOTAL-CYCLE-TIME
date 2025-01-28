@@ -127,7 +127,7 @@ function resetResults() {
 }
 
 function downloadResults() {
-    const fileInput = document.getElementById('uploadExcelInput');
+    const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
 
     if (!file) {
@@ -230,4 +230,37 @@ function updateToExcel() {
                     '', // B might be something else, keeping it blank
                     'Setup Number',  // C - Setup Number
                     result.cycleTime || 'Not Found', // D - Total Cycle Time
-                    ...Array(excelRows[0].length - 4).fill('') // Fill rest...
+                    ...Array(excelRows[0].length - 4).fill('') // Fill rest with blanks to match row length
+                ]);
+            }
+        });
+
+        // Convert back to a worksheet format
+        const newWS = XLSX.utils.aoa_to_sheet(excelRows.map(row => Object.values(row)));
+        const newWB = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+
+        // Save the new workbook
+        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+
+        // Optionally update the table on the page if needed
+        const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+        resultsTable.innerHTML = '';
+        results.forEach(result => {
+            const newRow = resultsTable.insertRow();
+            newRow.insertCell().textContent = result.fileName;
+            newRow.insertCell().textContent = result.cycleTime || 'Not Found';
+        });
+
+        document.getElementById('downloadButton').style.display = 'block';
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('processButton').addEventListener('click', processFiles);
+    document.getElementById('resetButton').addEventListener('click', resetResults);
+    document.getElementById('downloadButton').addEventListener('click', downloadResults);
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+});
