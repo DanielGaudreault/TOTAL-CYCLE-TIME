@@ -1,8 +1,8 @@
 let results = []; // Store results for files
+let workbook = null; // To hold the Excel workbook
 
 // Function to process both the Excel and PDF files
 function processFiles() {
-    // Get uploaded files
     const excelFile = document.getElementById('excelFile').files[0];
     const pdfFiles = document.getElementById('pdfFiles').files;
 
@@ -23,14 +23,13 @@ function processFiles() {
     const reader = new FileReader();
     reader.onload = function (event) {
         const excelData = event.target.result;
-        const workbook = XLSX.read(excelData, { type: 'binary' });
+        workbook = XLSX.read(excelData, { type: 'binary' });
 
         // Assume the first sheet is the one we want to work with
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Start processing the PDFs
         let processedCount = 0;
         const cycleTimes = [];
 
@@ -131,29 +130,24 @@ function updateResultsTable(cycleTimes) {
 
 // Download the updated Excel file
 function downloadExcel() {
-    const excelFile = document.getElementById('excelFile').files[0];
-    const reader = new FileReader();
+    if (!workbook) {
+        alert("No workbook to download.");
+        return;
+    }
 
-    reader.onload = function (event) {
-        const excelData = event.target.result;
-        const workbook = XLSX.read(excelData, { type: 'binary' });
+    // Get the first sheet and update it
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
 
-        // Assume we're working with the first sheet
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
+    // Convert the modified rows into a sheet
+    const updatedSheet = XLSX.utils.aoa_to_sheet(XLSX.utils.sheet_to_json(sheet, { header: 1 }));
 
-        // Convert the modified rows into a sheet
-        const updatedSheet = XLSX.utils.aoa_to_sheet(sheet);
+    // Create a new workbook with the updated sheet
+    const updatedWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
-        // Create a new workbook with the updated sheet
-        const updatedWorkbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
-
-        // Generate and download the updated Excel file
-        XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
-    };
-
-    reader.readAsBinaryString(excelFile);
+    // Generate and download the updated Excel file
+    XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
 }
 
 // Reset results function to clear the table and reset the form
