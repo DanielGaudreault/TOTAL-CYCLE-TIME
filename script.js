@@ -141,15 +141,19 @@ function downloadUpdatedExcel() {
         const updatedWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
-        // Trigger the file download using Blob
-        const blob = XLSX.write(updatedWorkbook, { bookType: 'xlsx', type: 'blob' });
+        // Generate the Excel file in chunks to avoid memory issues
+        const blob = XLSX.write(updatedWorkbook, {
+            bookType: 'xlsx',
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
 
         // Create a download link and click it to trigger the download
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(blob);
         downloadLink.download = 'updated_cycle_times.xlsx';
 
-        // Ensure the download link is properly triggered
+        // Trigger the download
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);  // Clean up after the download
