@@ -1,3 +1,134 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // Event listener for "Process Files" button
+    document.getElementById('processButton').addEventListener('click', processFiles);
+
+    // Event listener for "Reset Results" button
+    document.getElementById('resetButton').addEventListener('click', resetResults);
+
+    // Event listener for "Upload to Excel" button
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+});
+
+function processFiles() {
+    const fileInput = document.getElementById('fileInput');
+    const loading = document.getElementById('loading');
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+
+    if (fileInput.files.length === 0) {
+        alert('Please select at least one file.');
+        return;
+    }
+
+    // Clear previous results
+    results = [];
+    resultsTable.innerHTML = '';
+    loading.style.display = 'block';
+
+    const files = Array.from(fileInput.files);
+
+    const promises = files.map(file => {
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+            reader.onload = async function (event) {
+                const content = event.target.result;
+                let cycleTime = null;
+
+                if (file.type === 'application/pdf') {
+                    // Handle PDF files
+                    const text = await parsePDF(content);
+                    cycleTime = extractCycleTime(text);
+                } else {
+                    // Handle text files
+                    cycleTime = extractCycleTime(content);
+                }
+
+                // Add result to the table
+                results.push({ fileName: file.name, cycleTime });
+                const row = resultsTable.insertRow();
+                row.insertCell().textContent = file.name;
+                row.insertCell().textContent = cycleTime || 'Not Found';
+
+                resolve(); // Signal that this file has been processed
+            };
+
+            reader.onerror = reject;
+
+            if (file.type === 'application/pdf') {
+                reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
+            } else {
+                reader.readAsText(file); // Read text files as text
+            }
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        loading.style.display = 'none';
+    }).catch(error => {
+        console.error("File processing failed:", error);
+        loading.style.display = 'none';
+    });
+}
+
+function extractCycleTime(text) {
+    const lines = text.split('\n'); // Split text into lines
+    for (const line of lines) {
+        if (line.includes("TOTAL CYCLE TIME")) {
+            // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
+            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+            const match = line.match(regex);
+            return match ? match[0] : null; // Return the matched time or null
+        }
+    }
+    return null; // Return null if no match is found
+}
+
+function parsePDF(data) {
+    return new Promise((resolve, reject) => {
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const loadingTask = pdfjsLib.getDocument({ data });
+        loadingTask.promise.then(pdf => {
+            let text = '';
+            const numPages = pdf.numPages;
+
+            const fetchPage = (pageNum) => {
+                return pdf.getPage(pageNum).then(page => {
+                    return page.getTextContent().then(textContent => {
+                        let pageText = '';
+                        textContent.items.forEach(item => {
+                            pageText += item.str + ' ';
+                        });
+                        text += pageText + '\n'; // Add newline after each page
+                    });
+                });
+            };
+
+            const fetchAllPages = async () => {
+                for (let i = 1; i <= numPages; i++) {
+                    await fetchPage(i);
+                }
+                resolve(text);
+            };
+
+            fetchAllPages();
+        }).catch(reject);
+    });
+}
+
+function resetResults() {
+    // Clear the results array
+    results = [];
+
+    // Clear the table
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = '';
+
+    // Clear the file input (this needs to be done for each file input)
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadExcelInput').value = '';
+}
+
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
