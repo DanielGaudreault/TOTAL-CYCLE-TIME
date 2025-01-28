@@ -151,22 +151,32 @@ function updateToExcel() {
         // Assuming data is in the first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        const excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        // Update existing results with new data from Excel
-        jsonData.slice(1).forEach(row => {
-            if (row.length > 0) {
-                const existingResult = results.find(r => r.fileName === row[0]);
-                if (existingResult) {
-                    existingResult.cycleTime = row[1] || existingResult.cycleTime; // Update if new cycleTime is provided
-                } else {
-                    // If it's a new file, add to results
-                    results.push({ fileName: row[0], cycleTime: row[1] || 'Not Found' });
-                }
+        // Update or add new entries based on results from PDF processing
+        results.forEach(result => {
+            const matchingRowIndex = excelRows.findIndex(row => row[0] === result.fileName); // Assuming 'Item No.' is in column A (index 0)
+            
+            if (matchingRowIndex !== -1) {
+                // Match found, update existing row
+                let row = excelRows[matchingRowIndex];
+                row[2] = 'Setup Number'; // Setup number in column C (index 2)
+                row[3] = result.cycleTime || 'Not Found'; // Total Cycle Time in column D (index 3)
+            } else {
+                // No match found, add new row
+                excelRows.push([result.fileName, '', 'Setup Number', result.cycleTime || 'Not Found']);
             }
         });
 
-        // Update the table
+        // Create new workbook with updated data
+        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+        const newWB = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+
+        // Save the new workbook
+        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+
+        // Optionally update the table on the page if needed
         const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
         resultsTable.innerHTML = '';
         results.forEach(result => {
