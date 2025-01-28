@@ -23,7 +23,7 @@ function updateToExcel() {
         // Process each result from the PDFs
         results.forEach(result => {
             // Extract the project name from the PDF filename, assuming it's something like "Project Name - Identifier"
-            const matchIdentifier = result.fileName.match(/Project Name - (.+)/)?.[1].trim();
+            const matchIdentifier = result.fileName.match(/^(.+) - \d+\.pdf$/)?.[1].trim(); // Adjusting regex
 
             if (!matchIdentifier) {
                 console.error('Could not extract match identifier from PDF file name:', result.fileName);
@@ -40,10 +40,10 @@ function updateToExcel() {
 
         // Now we go through the excelRows and match the project name (from the cycleTimeSums) with the 'Item No.' column
         excelRows.forEach((row, rowIndex) => {
-            const matchIdentifier = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
-            if (cycleTimeSums[matchIdentifier]) {
+            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
+            if (cycleTimeSums[itemNo]) {
                 // Match found, update the cycle time sum in the 'Total Cycle Time' column (assuming column D is where it goes)
-                row[3] = formatCycleTime(cycleTimeSums[matchIdentifier]);
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming 'Total Cycle Time' is in column 4 (index 3)
             }
         });
 
@@ -58,7 +58,7 @@ function updateToExcel() {
     reader.readAsArrayBuffer(file);
 }
 
-// Helper function to parse cycle time (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS" -> total seconds)
+// Helper function to parse cycle time (e.g., "1 HOURS, 30 MINUTES, 0 SECONDS" -> total seconds)
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
