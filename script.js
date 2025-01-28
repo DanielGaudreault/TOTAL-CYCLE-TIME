@@ -123,7 +123,7 @@ function extractTextFromPDF(pdfData) {
 
 // Extract the project name from PDF (e.g., CNT2301)
 function extractProjectName(text) {
-    const regex = /PROJECT NAME: (\w+)/i;
+    const regex = /PROJECT NAME:\s*([A-Za-z0-9]+(?:\s*[A-Za-z0-9]+)*)/i;
     const match = text.match(regex);
     if (match && match[1]) {
         return match[1].trim();
@@ -133,17 +133,17 @@ function extractProjectName(text) {
 
 // Extract the total cycle time from PDF (e.g., 0 HOURS, 3 MINUTES, 8 SECONDS)
 function extractCycleTime(text) {
-    const regex = /TOTAL CYCLE TIME: (\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i; 
+    const regex = /TOTAL CYCLE TIME:?\s*(\d+\s*HOURS?\,?\s*\d+\s*MINUTES?\,?\s*\d+\s*SECONDS?)/i;
     const match = text.match(regex);
     if (match && match[1]) {
-        return match[1];
+        return match[1].replace(/\,/g, ''); // Remove commas for uniformity
     }
     return 'Not found';
 }
 
 // Extract the setup name from the PDF text
 function extractSetupName(text) {
-    const regex = /PROJECT NAME: (\w+ \w+)/i; // Example: PROJECT NAME: CNT2301 R1
+    const regex = /PROJECT NAME: ([A-Za-z0-9]+(?:\s*[A-Za-z0-9]+)*)/i; // Example: PROJECT NAME: CNT2301 R1
     const match = text.match(regex);
     if (match && match[1]) {
         return match[1];
