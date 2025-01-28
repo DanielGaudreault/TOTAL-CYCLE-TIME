@@ -1,5 +1,5 @@
-let results = []; // Store results for files
 let workbook = null; // To hold the Excel workbook
+let excelRows = []; // Store rows from the Excel sheet
 
 // Function to process both the Excel and PDF files
 async function processFiles() {
@@ -11,10 +11,6 @@ async function processFiles() {
         return;
     }
 
-    // Clear the results table before inserting new results
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = ''; // Clear the table
-
     // Show loading indicator
     document.getElementById('loading').style.display = 'block';
     document.getElementById('downloadButton').style.display = 'none';
@@ -25,31 +21,31 @@ async function processFiles() {
         const excelData = event.target.result;
         workbook = XLSX.read(excelData, { type: 'binary' });
 
-        // Assume the first sheet is the one we want to work with
+        // Read the first sheet and extract rows
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        excelRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Handle PDF extraction concurrently with Promise.all
+        // Handle PDF extraction concurrently
         const cycleTimes = await Promise.all(Array.from(pdfFiles).map((pdfFile) => {
             return extractCycleDataFromPDF(pdfFile);
         }));
 
-        // Process the extracted data and update Excel rows
+        // Now process extracted PDF data
         cycleTimes.forEach((cycleData) => {
             const { projectName, totalCycleTime, setupName } = cycleData;
 
-            // Find matching project names and update the corresponding rows in Excel sheet
-            for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
-                if (rows[rowIndex][0] && rows[rowIndex][0].toLowerCase() === projectName.toLowerCase()) {
-                    // Match found, update columns C and D
-                    rows[rowIndex][2] = setupName;  // Setup name in Column C
-                    rows[rowIndex][3] = totalCycleTime;  // Cycle time in Column D
+            // Find matching project names in the Excel sheet and update columns C (setup name) and D (cycle time)
+            for (let rowIndex = 1; rowIndex < excelRows.length; rowIndex++) {
+                if (excelRows[rowIndex][0] && excelRows[rowIndex][0].toLowerCase() === projectName.toLowerCase()) {
+                    excelRows[rowIndex][2] = setupName;  // Update Setup Name (Column C)
+                    excelRows[rowIndex][3] = totalCycleTime;  // Update Total Cycle Time (Column D)
+                    break; // Exit once matched project name is found
                 }
             }
         });
 
-        // Once all PDFs are processed, update the table and show the download button
+        // Once processing is complete, update the results table and show the download button
         updateResultsTable(cycleTimes);
         document.getElementById('downloadButton').style.display = 'inline-block';
         document.getElementById('loading').style.display = 'none';
@@ -58,14 +54,14 @@ async function processFiles() {
     reader.readAsBinaryString(excelFile); // Read Excel file
 }
 
-// Extract cycle data from PDF (project name, cycle time, setup name)
+// Extract cycle data (project name, cycle time, setup name) from PDF
 async function extractCycleDataFromPDF(pdfFile) {
     const pdfData = await readPDFFile(pdfFile);
     const pdfText = await extractTextFromPDF(pdfData);
 
-    const projectName = extractProjectName(pdfText); // Extract project name (e.g. CNT2301)
-    const totalCycleTime = extractCycleTime(pdfText); // Extract total cycle time
-    const setupName = extractSetupName(pdfText); // Extract setup name (e.g. CNT2301 R1)
+    const projectName = extractProjectName(pdfText);
+    const totalCycleTime = extractCycleTime(pdfText);
+    const setupName = extractSetupName(pdfText);
 
     return { projectName, totalCycleTime, setupName };
 }
@@ -118,47 +114,47 @@ function extractTextFromPDF(pdfData) {
     });
 }
 
-// Extract the project name (e.g., CNT2301) from the PDF text
+// Extract the project name from PDF (e.g., CNT2301)
 function extractProjectName(text) {
-    const regex = /PROJECT NAME: (\w+)/i; // Match "PROJECT NAME: CNT2301"
+    const regex = /PROJECT NAME: (\w+)/i;
     const match = text.match(regex);
     if (match && match[1]) {
-        return match[1].trim(); // Extracted project name (e.g., CNT2301)
+        return match[1].trim();
     }
     return 'Not found';
 }
 
-// Extract the total cycle time (e.g., 0 HOURS, 3 MINUTES, 8 SECONDS)
+// Extract the total cycle time from PDF (e.g., 0 HOURS, 3 MINUTES, 8 SECONDS)
 function extractCycleTime(text) {
     const regex = /TOTAL CYCLE TIME: (\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i; 
     const match = text.match(regex);
     if (match && match[1]) {
-        return match[1]; // Extracted total cycle time
+        return match[1];
     }
     return 'Not found';
 }
 
-// Extract the setup name (e.g., CNT2301 R1)
+// Extract the setup name from the PDF text
 function extractSetupName(text) {
-    const regex = /PROJECT NAME: (\w+ \w+)/i; // This assumes "PROJECT NAME: CNT2301 R1"
+    const regex = /PROJECT NAME: (\w+ \w+)/i; // Example: PROJECT NAME: CNT2301 R1
     const match = text.match(regex);
     if (match && match[1]) {
-        return match[1]; // Setup name (e.g., CNT2301 R1)
+        return match[1];
     }
     return 'Not found';
 }
 
-// Update the results table with cycle times
+// Update the results table with the cycle times
 function updateResultsTable(cycleTimes) {
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     cycleTimes.forEach((result) => {
         const row = resultsTable.insertRow();
-        row.insertCell().textContent = result.projectName;  // Project name
-        row.insertCell().textContent = result.totalCycleTime;  // Total cycle time
+        row.insertCell().textContent = result.projectName;
+        row.insertCell().textContent = result.totalCycleTime;
     });
 }
 
-// Download the updated Excel file
+// Download the updated Excel file with modified data
 function downloadExcel() {
     if (!workbook) {
         alert("No workbook to download.");
@@ -170,7 +166,7 @@ function downloadExcel() {
     const sheet = workbook.Sheets[sheetName];
 
     // Convert the modified rows into a sheet
-    const updatedSheet = XLSX.utils.aoa_to_sheet(XLSX.utils.sheet_to_json(sheet, { header: 1 }));
+    const updatedSheet = XLSX.utils.aoa_to_sheet(excelRows);
 
     // Create a new workbook with the updated sheet
     const updatedWorkbook = XLSX.utils.book_new();
@@ -193,7 +189,4 @@ function resetResults() {
     // Reset the file input fields
     document.getElementById('excelFile').value = '';
     document.getElementById('pdfFiles').value = '';
-
-    // Reset results array
-    results = [];
 }
