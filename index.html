@@ -3,53 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cycle Time Updater</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
+    <title>File Processor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        #loading { display: none; }
+        #downloadButton { display: none; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Cycle Time Updater</h1>
+    <input type="file" id="fileInput" multiple>
+    <button id="processButton">Process Files</button>
+    <button id="resetButton">Reset Results</button>
+    <div id="loading">Processing...</div>
+    <button id="downloadButton">Download Results</button>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Cycle Time</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-        <!-- Excel File Input -->
-        <input type="file" id="excelFile" accept=".xlsx" />
-        <br><br>
+    <script>
+        let results = []; // Store results for all files
 
-        <!-- PDF Files Input -->
-        <input type="file" id="pdfFiles" accept=".pdf" multiple />
-        <br><br>
+        function processFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const loading = document.getElementById('loading');
+            const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            const downloadButton = document.getElementById('downloadButton');
 
-        <!-- Process Files Button -->
-        <button onclick="processFiles()">Process Files</button>
-        <br><br>
+            if (fileInput.files.length === 0) {
+                alert('Please select at least one file.');
+                return;
+            }
 
-        <!-- Loading Indicator -->
-        <div id="loading" style="display: none;">Processing...</div>
+            // Clear previous results
+            results = [];
+            resultsTable.innerHTML = '';
+            downloadButton.style.display = 'none';
+            loading.style.display = 'block';
 
-        <!-- Results Table -->
-        <h2>Results:</h2>
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Total Cycle Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Results will be inserted here -->
-            </tbody>
-        </table>
+            const files = Array.from(fileInput.files);
 
-        <!-- Download Button -->
-        <button id="downloadButton" style="display: none;" onclick="downloadExcel()">Download Updated Excel</button>
+            const promises = files.map(file => {
+                const reader = new FileReader();
+                return new Promise((resolve, reject) => {
+                    reader.onload = async function (event) {
+                        const content = event.target.result;
+                        let cycleTime = null;
 
-        <!-- Reset Button -->
-        <button onclick="resetResults()">Reset Results</button>
-    </div>
+                        if (file.type === 'application/pdf') {
+                            // Handle PDF files
+                            const text = await parsePDF(content);
+                            cycleTime = extractCycleTime(text);
+                        } else {
+                            // Handle text files
+                            cycleTime = extractCycleTime(content);
+                        }
 
-    <!-- SheetJS Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- PDF.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="script.js"></script>
+                        // Add result to the table
+                        results.push({ fileName: file.name, cycleTime });
+                        const row = resultsTable.insertRow();
+                        row.insertCell().textContent = file.name;
+                        row.insertCell().textContent = cycleTime || 'Not Found';
+
+                        resolve(); // Signal that this file has been processed
+                    };
+
+                    reader.onerror = reject;
+
+                    if (file.type === 'application/pdf') {
+                        reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
+                    } else {
+                        reader.readAsText(file); // Read text files as text
+                    }
+                });
+            });
+
+            Promise.all(promises).then(() => {
+                loading.style.display = 'none';
+                downloadButton.style.display = 'block';
+            }).catch(error => {
+                console.error("File processing failed:", error);
+                loading.style.display = 'none';
+            });
+        }
+
+        function extractCycleTime(text) {
+            const lines = text.split('\n'); // Split text into lines
+            for (const line of lines) {
+                if (line.includes("TOTAL CYCLE TIME")) {
+                    // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
+                    const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+                    const match = line.match(regex);
+                    return match ? match[0] : null; // Return the matched time or null
+                }
+            }
+            return null; // Return null if no match is found
+        }
+
+        function parsePDF(data) {
+            return new Promise((resolve, reject) => {
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                const loadingTask = pdfjsLib.getDocument({ data });
+                loadingTask.promise.then(pdf => {
+                    let text = '';
+                    const numPages = pdf.numPages;
+
+                    const fetchPage = (pageNum) => {
+                        return pdf.getPage(pageNum).then(page => {
+                            return page.getTextContent().then(textContent => {
+                                let pageText = '';
+                                textContent.items.forEach(item => {
+                                    pageText += item.str + ' ';
+                                });
+                                text += pageText + '\n'; // Add newline after each page
+                            });
+                        });
+                    };
+
+                    const fetchAllPages = async () => {
+                        for (let i = 1; i <= numPages; i++) {
+                            await fetchPage(i);
+                        }
+                        resolve(text);
+                    };
+
+                    fetchAllPages();
+                }).catch(reject);
+            });
+        }
+
+        function resetResults() {
+            results = []; // Clear the results array
+            document.getElementById('resultsTable').getElementsByTagName('tbody')[0].innerHTML = ''; // Clear the table
+            document.getElementById('downloadButton').style.display = 'none'; // Hide download button
+        }
+
+        function downloadResults() {
+            // Convert results to Excel
+            const ws = XLSX.utils.json_to_sheet(results);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Results');
+            XLSX.writeFile(wb, 'cycle_times.xlsx');
+        }
+
+        // Event Listeners
+        document.getElementById('processButton').addEventListener('click', processFiles);
+        document.getElementById('resetButton').addEventListener('click', resetResults);
+        document.getElementById('downloadButton').addEventListener('click', downloadResults);
+    </script>
 </body>
 </html>
