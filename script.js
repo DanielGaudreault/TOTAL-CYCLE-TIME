@@ -21,6 +21,7 @@ async function processFiles() {
     document.getElementById('downloadButton').style.display = 'none';
     document.getElementById('resultsTable').style.display = 'none';
 
+    console.time('Excel File Processing');
     // Read the Excel file
     const reader = new FileReader();
     reader.onload = async function (event) {
@@ -33,6 +34,7 @@ async function processFiles() {
         excelRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         console.log('Excel rows:', excelRows);
+        console.timeEnd('Excel File Processing');
 
         // Handle PDF extraction concurrently
         const cycleTimes = await processPDFFiles(pdfFiles);
@@ -75,7 +77,9 @@ async function processPDFFiles(pdfFiles) {
         const batch = Array.from(pdfFiles).slice(i, i + batchSize);
         const batchResults = await Promise.all(batch.map(async (pdfFile) => {
             try {
+                console.time(`PDF Processing - ${pdfFile.name}`);
                 const cycleData = await extractCycleDataFromPDF(pdfFile);
+                console.timeEnd(`PDF Processing - ${pdfFile.name}`);
                 return cycleData;
             } catch (error) {
                 console.error("Error processing PDF file:", error);
@@ -215,20 +219,4 @@ function downloadExcel() {
     XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
     // Generate and download the updated Excel file
-    XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
-}
-
-// Reset results function to clear the table and reset the form
-function resetResults() {
-    // Clear the results table
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = '';
-
-    // Hide the download button and reset loading state
-    document.getElementById('downloadButton').style.display = 'none';
-    document.getElementById('loading').style.display = 'none';
-
-    // Reset the file input fields
-    document.getElementById('excelFile').value = '';
-    document.getElementById('pdfFiles').value = '';
-}
+    XLSX.writeFile(updatedWorkbook,
