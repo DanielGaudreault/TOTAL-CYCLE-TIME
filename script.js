@@ -155,7 +155,7 @@ function updateToExcel() {
         // Process each result from the PDFs
         results.forEach(result => {
             // Extract the project name from the PDF filename, assuming it's something like "Project Name - Identifier"
-            const matchIdentifier = result.fileName.match(/^(.+) - \d+\.pdf$/)?.[1].trim(); // Adjusting regex
+            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim(); // Adjusting regex
 
             if (!matchIdentifier) {
                 console.error('Could not extract match identifier from PDF file name:', result.fileName);
