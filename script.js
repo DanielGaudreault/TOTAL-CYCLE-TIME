@@ -38,7 +38,7 @@ function updateToExcel() {
             }
         });
 
-        // Find matching rows in Excel and update them
+        // Now we go through the excelRows and match the project name (from the cycleTimeSums) with the 'Item No.' column
         excelRows.forEach((row, rowIndex) => {
             const matchIdentifier = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
             if (cycleTimeSums[matchIdentifier]) {
