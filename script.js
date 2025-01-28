@@ -14,6 +14,7 @@ async function processFiles() {
     // Show loading indicator
     document.getElementById('loading').style.display = 'block';
     document.getElementById('downloadButton').style.display = 'none';
+    document.getElementById('resultsTable').style.display = 'none';
 
     // Read the Excel file
     const reader = new FileReader();
@@ -180,42 +181,12 @@ function updateResultsTable(cycleTimes) {
         const row = resultsTable.insertRow();
         row.insertCell().textContent = result.projectName;
         row.insertCell().textContent = result.totalCycleTime;
+        row.insertCell().textContent = result.setupName;
     });
+
+    document.getElementById('resultsTable').style.display = 'table';
 }
 
 // Download the updated Excel file with modified data
 function downloadExcel() {
-    if (!workbook) {
-        alert("No workbook to download.");
-        return;
-    }
-
-    // Get the first sheet and update it
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-
-    // Convert the modified rows into a sheet
-    const updatedSheet = XLSX.utils.aoa_to_sheet(excelRows);
-
-    // Create a new workbook with the updated sheet
-    const updatedWorkbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
-
-    // Generate and download the updated Excel file
-    XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
-}
-
-// Reset results function to clear the table and reset the form
-function resetResults() {
-    // Clear the results table
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = '';
-
-    // Hide the download button and reset loading state
-    document.getElementById('downloadButton').style.display = 'none';
-    document.getElementById('loading').style.display = 'none';
-
-    // Reset the file input fields
-    document.getElementById('excelFile').value = '';
-    document.getElementById('pdfFiles').value = '';
-}
+    if (!work[_{{{CITATION{{{_1{](https://github.com/blocklet/development-guide/tree/532870eb469508c74f1185266abd1578a2e8acb9/src%2Fdeveloper%2Fstatic-blocklet%2Findex.md)
