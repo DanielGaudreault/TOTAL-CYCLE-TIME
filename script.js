@@ -151,32 +151,50 @@ function updateToExcel() {
         // Assuming data is in the first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        // Update or add new entries based on results from PDF processing
+        // Process each result from the PDFs
         results.forEach(result => {
-            const matchingRowIndex = excelRows.findIndex(row => row[0] === result.fileName); // Assuming 'Item No.' is in column A (index 0)
+            // Assuming the project name in the PDF is immediately followed by another identifier (like a number or code)
+            // Let's assume this identifier is the part of the filename after "Project Name -"
+            const matchIdentifier = result.fileName.split('Project Name -')[1]?.trim();
             
+            if (!matchIdentifier) {
+                console.error('Could not extract match identifier from PDF file name:', result.fileName);
+                return; // Skip this result if we can't find a match identifier
+            }
+
+            // Try to find an existing row in the Excel sheet where the identifier matches the 'Item No.'
+            const matchingRowIndex = excelRows.findIndex(row => row[0]?.toString().trim() === matchIdentifier);
+
             if (matchingRowIndex !== -1) {
                 // Match found, update existing row
-                let row = excelRows[matchingRowIndex];
-                row[2] = 'Setup Number'; // Setup number in column C (index 2)
-                row[3] = result.cycleTime || 'Not Found'; // Total Cycle Time in column D (index 3)
+                excelRows[matchingRowIndex] = {
+                    ...excelRows[matchingRowIndex],
+                    2: 'Setup Number', // Update column C with 'Setup Number'
+                    3: result.cycleTime || 'Not Found' // Update column D with total cycle time
+                };
             } else {
                 // No match found, add new row
-                excelRows.push([result.fileName, '', 'Setup Number', result.cycleTime || 'Not Found']);
+                excelRows.push([
+                    matchIdentifier, // Assuming 'Item No.' column A
+                    '', // B might be something else, keeping it blank
+                    'Setup Number',  // C - Setup Number
+                    result.cycleTime || 'Not Found', // D - Total Cycle Time
+                    ...Array(excelRows[0].length - 4).fill('') // Fill rest with blanks to match row length
+                ]);
             }
         });
 
-        // Create new workbook with updated data
-        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+        // Convert back to a worksheet format
+        const newWS = XLSX.utils.aoa_to_sheet(excelRows.map(row => Object.values(row)));
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
         // Save the new workbook
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
 
-        // Optionally update the table on the page if needed
+        // Update the table on the page if needed
         const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
         resultsTable.innerHTML = '';
         results.forEach(result => {
