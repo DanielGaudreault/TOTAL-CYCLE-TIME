@@ -150,8 +150,8 @@ function updateFromExcel() {
 
         // Update results and table from Excel data
         jsonData.slice(1).forEach(row => {
-            if (row.length >= 2) { // Check if we have at least file name and cycle time
-                results.push({ fileName: row[0], cycleTime: row[1] });
+            if (row.length > 0) { // Check if we have at least file name
+                results.push({ fileName: row[0], cycleTime: row[1] || 'Not Found' }); // Default to 'Not Found' if cycleTime is missing
                 const newRow = resultsTable.insertRow();
                 newRow.insertCell().textContent = row[0];
                 newRow.insertCell().textContent = row[1] || 'Not Found';
