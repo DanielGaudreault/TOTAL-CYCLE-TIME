@@ -138,13 +138,14 @@ function downloadExcel() {
         const updatedWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
 
-        // Write and trigger download
-        try {
-            XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
-        } catch (error) {
-            alert("An error occurred while generating the Excel file. Please try again.");
-            console.error(error);
-        }
+        // Trigger the file download using Blob
+        const blob = XLSX.write(updatedWorkbook, { bookType: 'xlsx', type: 'blob' });
+        
+        // Create a download link and click it to trigger the download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = 'updated_cycle_times.xlsx';
+        downloadLink.click();
     };
 
     reader.readAsBinaryString(excelFile);
