@@ -28,14 +28,14 @@ function processFiles() {
 
         // Process each PDF file one by one to avoid large memory load
         let currentPdfIndex = 0;
-        processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount);
+        processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount, workbook, sheetName);
     };
 
     reader.readAsBinaryString(excelFile);
 }
 
 // Function to handle PDF files one at a time
-function processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount) {
+function processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCount, workbook, sheetName) {
     if (currentPdfIndex >= pdfFiles.length) {
         // All PDFs processed, update results table and show download button
         updateResultsTable(cycleTimes);
@@ -62,14 +62,9 @@ function processNextPdf(currentPdfIndex, pdfFiles, rows, cycleTimes, processedCo
         }
 
         processedCount++;
-        if (processedCount === pdfFiles.length) {
-            updateResultsTable(cycleTimes);
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('downloadButton').style.display = 'inline-block';
-        }
 
         // Recursively call the next PDF file
-        processNextPdf(currentPdfIndex + 1, pdfFiles, rows, cycleTimes, processedCount);
+        processNextPdf(currentPdfIndex + 1, pdfFiles, rows, cycleTimes, processedCount, workbook, sheetName);
     };
 
     pdfReader.readAsArrayBuffer(pdfFile);
