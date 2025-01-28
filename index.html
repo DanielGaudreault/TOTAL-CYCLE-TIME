@@ -3,42 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel & PDF Processor</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Find "TOTAL CYCLE TIME"</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Optional CSS -->
 </head>
 <body>
     <div class="container">
-        <h1>Process Files: Update Excel Sheet with PDF Cycle Times</h1>
+        <h1>Find "TOTAL CYCLE TIME" in Files</h1>
         
-        <!-- Input to select multiple Excel and PDF files -->
-        <input type="file" id="excelFile" accept=".xlsx" />
+        <div>
+            <label for="excelFile">Upload Excel File:</label>
+            <input type="file" id="excelFile" accept=".xlsx">
+        </div>
+
+        <div>
+            <label for="pdfFiles">Upload PDF Files:</label>
+            <input type="file" id="pdfFiles" accept=".pdf" multiple>
+        </div>
+
         <br>
-        <input type="file" id="pdfFiles" accept=".pdf" multiple />
-        <br>
+
         <button onclick="processFiles()">Process Files</button>
-        
+        <button id="resetButton" onclick="resetResults()">Reset Results</button>
+
         <div id="loading" style="display: none;">Processing... Please wait.</div>
         
-        <!-- Table to display processing results -->
         <h2>Results:</h2>
         <table id="resultsTable">
             <thead>
                 <tr>
                     <th>File Name</th>
-                    <th>Cycle Time</th>
+                    <th>TOTAL CYCLE TIME</th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                <!-- Results will be added here -->
+            </tbody>
         </table>
-        
         <br>
         <button id="downloadButton" style="display: none;" onclick="downloadUpdatedExcel()">Download Updated Excel</button>
     </div>
 
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- SheetJS Library -->
+    <!-- SheetJS Library for Excel Download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="script.js"></script> <!-- Your script -->
+    <script src="script.js"></script> <!-- JavaScript file -->
 </body>
 </html>
