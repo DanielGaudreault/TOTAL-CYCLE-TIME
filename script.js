@@ -1,3 +1,8 @@
+document.getElementById('upload-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    processFiles();
+});
+
 let workbook = null; // To hold the Excel workbook
 let excelRows = []; // Store rows from the Excel sheet
 
@@ -27,12 +32,15 @@ async function processFiles() {
         const sheet = workbook.Sheets[sheetName];
         excelRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+        console.log('Excel rows:', excelRows);
+
         // Handle PDF extraction concurrently
         const cycleTimes = await processPDFFiles(pdfFiles);
 
         // Now process extracted PDF data
         cycleTimes.forEach((cycleData) => {
             const { projectName, totalCycleTime, setupName } = cycleData;
+            console.log('Cycle data:', cycleData);
 
             // Find matching project names in the Excel sheet and update columns C (setup name) and D (cycle time)
             for (let rowIndex = 1; rowIndex < excelRows.length; rowIndex++) {
@@ -77,6 +85,7 @@ async function processPDFFiles(pdfFiles) {
         cycleTimes.push(...batchResults);
     }
 
+    console.log('Cycle times:', cycleTimes);
     return cycleTimes;
 }
 
@@ -189,4 +198,37 @@ function updateResultsTable(cycleTimes) {
 
 // Download the updated Excel file with modified data
 function downloadExcel() {
-    if (!work[_{{{CITATION{{{_1{](https://github.com/blocklet/development-guide/tree/532870eb469508c74f1185266abd1578a2e8acb9/src%2Fdeveloper%2Fstatic-blocklet%2Findex.md)
+    if (!workbook) {
+        alert("No workbook to download.");
+        return;
+    }
+
+    // Get the first sheet and update it
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // Convert the modified rows into a sheet
+    const updatedSheet = XLSX.utils.aoa_to_sheet(excelRows);
+
+    // Create a new workbook with the updated sheet
+    const updatedWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, sheetName);
+
+    // Generate and download the updated Excel file
+    XLSX.writeFile(updatedWorkbook, 'updated_cycle_times.xlsx');
+}
+
+// Reset results function to clear the table and reset the form
+function resetResults() {
+    // Clear the results table
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = '';
+
+    // Hide the download button and reset loading state
+    document.getElementById('downloadButton').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+
+    // Reset the file input fields
+    document.getElementById('excelFile').value = '';
+    document.getElementById('pdfFiles').value = '';
+}
