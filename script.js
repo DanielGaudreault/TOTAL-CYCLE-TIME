@@ -129,7 +129,7 @@ function resetResults() {
     document.getElementById('uploadExcelInput').value = '';
 }
 
-// Update Excel with the summed cycle times
+// Update Excel with the summed cycle times and the net total cycle time
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
@@ -151,6 +151,7 @@ function updateToExcel() {
 
         // Create an object to store the total cycle time for each project
         let cycleTimeSums = {};
+        let totalCycleTime = 0; // Variable to store the total cycle time for all PDFs
 
         // Process each result from the PDFs
         results.forEach(result => {
@@ -163,10 +164,13 @@ function updateToExcel() {
             }
 
             // If the project already exists in the cycleTimeSums map, add the cycle time, otherwise set it
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
+            totalCycleTime += cycleTimeInSeconds; // Accumulate the total cycle time
+
             if (cycleTimeSums[matchIdentifier]) {
-                cycleTimeSums[matchIdentifier] += parseCycleTime(result.cycleTime);
+                cycleTimeSums[matchIdentifier] += cycleTimeInSeconds;
             } else {
-                cycleTimeSums[matchIdentifier] = parseCycleTime(result.cycleTime);
+                cycleTimeSums[matchIdentifier] = cycleTimeInSeconds;
             }
         });
 
@@ -178,6 +182,14 @@ function updateToExcel() {
                 row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming 'Total Cycle Time' is in column 4 (index 3)
             }
         });
+
+        // Add a row at the end for the net total cycle time
+        excelRows.push([
+            'Net Total Cycle Time', // First column
+            '', // Leave second column empty
+            '', // Leave third column empty
+            formatCycleTime(totalCycleTime) // Total cycle time in the fourth column
+        ]);
 
         // Convert the updated data back to worksheet format
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
