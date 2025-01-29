@@ -1,42 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const processButton = document.getElementById('processButton');
-    const resetButton = document.getElementById('resetButton');
-    const uploadExcelButton = document.getElementById('uploadExcelButton');
-
-    if (processButton) {
-        processButton.addEventListener('click', processFiles);
-        console.log('Process button event listener attached');
-    } else {
-        console.error('Process button not found in DOM');
-    }
-
-    if (resetButton) {
-        resetButton.addEventListener('click', resetResults);
-        console.log('Reset button event listener attached');
-    } else {
-        console.error('Reset button not found in DOM');
-    }
-
-    if (uploadExcelButton) {
-        uploadExcelButton.addEventListener('click', updateToExcel);
-        console.log('Upload Excel button event listener attached');
-    } else {
-        console.error('Upload Excel button not found in DOM');
-    }
+    document.getElementById('processButton').addEventListener('click', processFiles);
+    document.getElementById('resetButton').addEventListener('click', resetResults);
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
 let results = [];
 
 async function processFiles() {
-    console.log('processFiles function called');
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-
-    if (!fileInput || !loading || !resultsTable) {
-        console.error('One or more required elements not found in DOM');
-        return;
-    }
 
     if (fileInput.files.length === 0) {
         alert('Please select at least one file.');
@@ -64,14 +37,12 @@ async function processFiles() {
             const row = resultsTable.insertRow();
             row.insertCell().textContent = file.name;
             row.insertCell().textContent = cycleTime || 'Not Found';
-            console.log(`Processed file: ${file.name}, Cycle Time: ${cycleTime}`);
         }
     } catch (error) {
         console.error("Error processing files:", error);
-        alert('An error occurred while processing the files. Please try again or check the console for details.');
+        alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
-        console.log("Results after processing:", results);
     }
 }
 
@@ -131,20 +102,16 @@ function parsePDF(data) {
 }
 
 function resetResults() {
-    console.log('resetResults function called');
     results = [];
-    const resultsTable = document.getElementById('resultsTable');
-    if (resultsTable) {
-        resultsTable.getElementsByTagName('tbody')[0].innerHTML = '';
-    }
+    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    resultsTable.innerHTML = '';
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadExcelInput').value = '';
 }
 
 function updateToExcel() {
-    console.log('updateToExcel function called');
     const fileInput = document.getElementById('uploadExcelInput');
-    const file = fileInput ? fileInput.files[0] : null;
+    const file = fileInput.files[0];
 
     if (!file) {
         alert('Please select an Excel file to update.');
@@ -153,17 +120,12 @@ function updateToExcel() {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        console.log('File read successfully');
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
-        console.log('Workbook parsed:', workbook);
 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-
-        console.log("Original Excel Rows:", excelRows);
-        console.log('Results for updating:', results);
 
         let cycleTimeSums = {};
         let totalCycleTime = 0;
@@ -171,7 +133,7 @@ function updateToExcel() {
         results.forEach(result => {
             const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
             if (!matchIdentifier) {
-                console.error('Could not extract project name from PDF file name:', result.fileName);
+                console.warn('Could not extract project name from PDF file name:', result.fileName);
                 return;
             }
 
@@ -179,16 +141,21 @@ function updateToExcel() {
             if (!isNaN(cycleTimeInSeconds)) {
                 totalCycleTime += cycleTimeInSeconds;
                 cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
-                console.log(`Added ${cycleTimeInSeconds} seconds to ${matchIdentifier}.`);
             } else {
                 console.error('Could not parse cycle time for:', result.fileName);
             }
         });
 
-        console.log("Cycle Time Sums:", cycleTimeSums);
-        console.log("Total Cycle Time:", totalCycleTime);
+        // Update existing rows in Excel
+        excelRows.forEach((row, rowIndex) => {
+            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
+            if (cycleTimeSums[itemNo]) {
+                // Update the cycle time in column D (index 3)
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]);
+            }
+        });
 
-        // Adding subtotals for each project
+        // Add summary rows
         Object.keys(cycleTimeSums).forEach(project => {
             excelRows.push([
                 `Subtotal for ${project}`,
@@ -196,26 +163,20 @@ function updateToExcel() {
                 '', 
                 formatCycleTime(cycleTimeSums[project])
             ]);
-            console.log(`Added subtotal for ${project}: ${formatCycleTime(cycleTimeSums[project])}`);
         });
 
-        // Adding the total cycle time at the very end
+        // Add total cycle time
         excelRows.push([
             'Net Total Cycle Time', 
             '', 
             '', 
             formatCycleTime(totalCycleTime)
         ]);
-        console.log(`Added net total cycle time: ${formatCycleTime(totalCycleTime)}`);
-
-        console.log('Updated Excel Rows:', excelRows);
 
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-        console.log('New Excel file created and saved');
     };
     reader.readAsArrayBuffer(file);
 }
