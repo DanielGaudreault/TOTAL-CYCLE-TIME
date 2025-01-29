@@ -31,9 +31,11 @@ async function processFiles() {
                 cycleTime = extractCycleTime(text);
                 const projectName = extractProjectNameFromPDF(text);
                 results.push({ fileName: file.name, cycleTime, projectName });
+                console.log(`Extracted project name from PDF: ${projectName}`);
             } else {
                 cycleTime = extractCycleTime(content);
                 results.push({ fileName: file.name, cycleTime });
+                console.log(`No project name extracted for non-PDF file: ${file.name}`);
             }
 
             const row = resultsTable.insertRow();
@@ -45,6 +47,7 @@ async function processFiles() {
         alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
+        console.log("Processed results:", results);
     }
 }
 
@@ -104,13 +107,16 @@ function parsePDF(data) {
 }
 
 function extractProjectNameFromPDF(text) {
-    // Assuming the project name is the first line or close to it on each page
+    // Assuming the project name is at the very beginning of each page or document
     const lines = text.split('\n');
     for (let line of lines) {
-        // Simplified regex to match project name, adjust as per the actual format
-        const nameMatch = line.match(/^(.*?)\s*$/);
-        if (nameMatch && nameMatch[1].trim()) {
-            return nameMatch[1].trim();
+        const trimLine = line.trim();
+        if (trimLine.length > 0) {
+            // Here, you can add more specific regex if needed, this is a simple one
+            const nameMatch = trimLine.match(/^([^-]+)/);
+            if (nameMatch && nameMatch[1]) {
+                return nameMatch[1].trim();
+            }
         }
     }
     console.warn('Could not extract project name from PDF');
@@ -162,11 +168,16 @@ function updateToExcel() {
             }
         });
 
+        console.log("CycleTimeSums:", cycleTimeSums);
+
         // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
         excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[1]?.toString().trim(); // 'Item No.' is now in column B (index 1)
+            const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
             if (cycleTimeSums[itemNo]) {
                 row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
+                console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
+            } else {
+                console.log(`No match found for Item No.: ${itemNo}`);
             }
         });
 
@@ -192,6 +203,7 @@ function updateToExcel() {
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+        console.log('Excel sheet updated and saved.');
     };
     reader.readAsArrayBuffer(file);
 }
