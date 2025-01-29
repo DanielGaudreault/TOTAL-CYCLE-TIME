@@ -83,7 +83,6 @@ function extractCycleTimeAndProgram(text) {
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].includes("GENERAL INFORMATION")) {
             generalInfoFound = true;
-            // From this point, look for the project name in the next few lines
             for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
                 if (lines[j].includes("Project Name") || lines[j].includes("Program Name")) {
                     programName = lines[j].replace(/Project Name:|Program Name:/i, '').trim();
@@ -99,14 +98,14 @@ function extractCycleTimeAndProgram(text) {
         console.warn("GENERAL INFORMATION section not found in the document.");
     }
 
-    // Then look for the cycle time as before
+    // Look for cycle time
     for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME") || line.includes("Subtotal")) {
-            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)|(\$\d+(?:\.\d{2})?)/i;
+        if (line.includes("TOTAL CYCLE TIME")) {
+            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
             const match = line.match(regex);
             cycleTime = match ? match[0] : null;
             console.log("Extracted Cycle Time:", cycleTime);
-            break; // Exit loop once cycle time is found
+            break;
         }
     }
 
@@ -168,63 +167,20 @@ function updateToExcel() {
 
         console.log("Original Excel Rows:", excelRows);
 
-        // Create a new array for the updated rows
-        let newExcelRows = [];
-
-        // Calculate totals
-        let cycleTimeSums = {};
+        // Calculate total cycle time
         let totalCycleTime = 0;
-        let subtotalSum = 0;
-
         results.forEach(result => {
-            if (result.programName) {
-                // Parse cycle time for each result
-                let cycleTimeInSeconds = parseCycleTime(result.cycleTime) || 0; 
-                totalCycleTime += cycleTimeInSeconds;
-
-                // Handle subtotals
-                const subtotalMatch = result.cycleTime.match(/\$\d+(?:\.\d{2})?/);
-                if (subtotalMatch) {
-                    subtotalSum += parseFloat(subtotalMatch[0].replace('$', ''));
-                }
-
-                // Sum up cycle time for each program
-                cycleTimeSums[result.programName] = (cycleTimeSums[result.programName] || 0) + cycleTimeInSeconds;
+            if (result.cycleTime) {
+                totalCycleTime += parseCycleTime(result.cycleTime);
             }
         });
 
-        console.log("Cycle Time Sums:", cycleTimeSums);
+        // Create a new array for the updated rows
+        let newExcelRows = excelRows.map(row => [...row]); // Spread to create a new array for each row
 
-        // Update rows with new data
-        excelRows.forEach(row => {
-            let newRow = [...row]; // Create a copy of the row
-            const programName = row[1]?.toString().trim(); // Program Name in column B (index 1)
-
-            if (cycleTimeSums[programName]) {
-                newRow[3] = formatCycleTime(cycleTimeSums[programName]); // Total Cycle Time in column D (index 3)
-                console.log(`Updating row for ${programName} with new time: ${newRow[3]}`);
-            } else {
-                console.log(`No update for program ${programName} as it wasn't found in PDF results.`);
-                // Keep original or set to empty string if there was no previous value
-                newRow[3] = row[3] || '';
-            }
-
-            newExcelRows.push(newRow);
-        });
-
-        // Add summary rows
-        newExcelRows.push([
-            'Net Total Cycle Time', 
-            '', 
-            '', 
-            formatCycleTime(totalCycleTime)
-        ]);
-        newExcelRows.push([
-            'Sum of Subtotals', 
-            '', 
-            '', 
-            `$${subtotalSum.toFixed(2)}`
-        ]);
+        // Find the last row with data to add the total
+        let lastRowIndex = newExcelRows.findLastIndex(row => row[0] || row[1] || row[2] || row[3]);
+        newExcelRows[lastRowIndex + 1] = ['', '', '', formatCycleTime(totalCycleTime)];
 
         console.log("New Excel Rows:", newExcelRows);
 
