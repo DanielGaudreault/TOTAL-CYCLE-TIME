@@ -25,7 +25,13 @@ async function processFiles() {
             if (file.type === 'application/pdf') {
                 const content = await readFile(file);
                 const text = await parsePDF(content);
+                console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
+                if (projectNameLine) {
+                    console.log('Found project name line:', projectNameLine);
+                } else {
+                    console.log('Project name line not found for file:', file.name);
+                }
                 results.push({ fileName: file.name, projectNameLine });
 
                 const row = resultsTable.insertRow();
@@ -86,18 +92,19 @@ function parsePDF(data) {
 }
 
 function extractProjectNameLine(text) {
+    // Use a more flexible regex to match various formats of "PROJECT NAME:"
+    const regex = /(PROJECT\s*NAME\s*:|Project\s*Name\s*:|project\s*name\s*:)/i;
     const lines = text.split('\n');
     for (let line of lines) {
-        if (line.includes("PROJECT NAME:")) {
-            // Return the whole line where "PROJECT NAME:" is found
+        if (regex.test(line)) {
+            // Return the whole line where "PROJECT NAME:", "Project Name:", or similar is found
             return line.trim();
         }
     }
-    console.warn('Could not find "PROJECT NAME:" in the PDF');
+    console.warn('Could not find "PROJECT NAME:" or similar in the PDF');
     return null;
 }
 
-// Reset function remains the same
 function resetResults() {
     results = [];
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
