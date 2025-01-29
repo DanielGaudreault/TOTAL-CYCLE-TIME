@@ -1,23 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if elements exist before adding listeners
     const processButton = document.getElementById('processButton');
     const resetButton = document.getElementById('resetButton');
     const uploadExcelButton = document.getElementById('uploadExcelButton');
 
     if (processButton) {
         processButton.addEventListener('click', processFiles);
+        console.log('Process button event listener attached');
     } else {
         console.error('Process button not found in DOM');
     }
 
     if (resetButton) {
         resetButton.addEventListener('click', resetResults);
+        console.log('Reset button event listener attached');
     } else {
         console.error('Reset button not found in DOM');
     }
 
     if (uploadExcelButton) {
         uploadExcelButton.addEventListener('click', updateToExcel);
+        console.log('Upload Excel button event listener attached');
     } else {
         console.error('Upload Excel button not found in DOM');
     }
@@ -26,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 let results = [];
 
 async function processFiles() {
+    console.log('processFiles function called');
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
@@ -128,6 +131,7 @@ function parsePDF(data) {
 }
 
 function resetResults() {
+    console.log('resetResults function called');
     results = [];
     const resultsTable = document.getElementById('resultsTable');
     if (resultsTable) {
@@ -138,6 +142,7 @@ function resetResults() {
 }
 
 function updateToExcel() {
+    console.log('updateToExcel function called');
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput ? fileInput.files[0] : null;
 
