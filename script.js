@@ -37,12 +37,14 @@ async function processFiles() {
             const row = resultsTable.insertRow();
             row.insertCell().textContent = file.name;
             row.insertCell().textContent = cycleTime || 'Not Found';
+            console.log(`Processed file: ${file.name}, Cycle Time: ${cycleTime}`);
         }
     } catch (error) {
         console.error("Error processing files:", error);
         alert('An error occurred while processing the files. Please try again or check the console for details.');
     } finally {
         loading.style.display = 'none';
+        console.log("Results after processing:", results);
     }
 }
 
@@ -127,10 +129,11 @@ function updateToExcel() {
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
+        console.log("Original Excel Rows:", excelRows);
+
         let cycleTimeSums = {};
         let totalCycleTime = 0;
 
-        // Sum up cycle times for each project
         results.forEach(result => {
             const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
             if (!matchIdentifier) {
@@ -147,15 +150,17 @@ function updateToExcel() {
             }
         });
 
-        // Update or add subtotals to the Excel sheet
+        console.log("Cycle Time Sums:", cycleTimeSums);
+        console.log("Total Cycle Time:", totalCycleTime);
+
         excelRows.forEach((row, rowIndex) => {
             const itemNo = row[0]?.toString().trim(); // 'Item No.' in first column
             if (cycleTimeSums[itemNo]) {
                 row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D
+                console.log(`Updated row for ${itemNo} with cycle time: ${row[3]}`);
             }
         });
 
-        // Add a new row for the net total cycle time at the end
         excelRows.push([
             'Net Total Cycle Time', 
             '', 
@@ -168,6 +173,7 @@ function updateToExcel() {
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+        console.log("Updated Excel sheet has been saved.");
     };
     reader.readAsArrayBuffer(file);
 }
