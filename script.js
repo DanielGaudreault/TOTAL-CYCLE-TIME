@@ -125,7 +125,6 @@ function extractProjectNameLine(text) {
     return null;
 }
 
-// New function from the provided code for extracting cycle time
 function extractCycleTime(text) {
     const lines = text.split('\n'); // Split text into lines
     for (const line of lines) {
@@ -179,7 +178,7 @@ function updateToExcel() {
                 return;
             }
 
-            const cycleTimeInSeconds = parseCycleTime(result.cycleTime); // Changed to use new parseCycleTime
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
             if (!isNaN(cycleTimeInSeconds)) {
                 totalCycleTime += cycleTimeInSeconds;
                 cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
@@ -228,19 +227,17 @@ function updateToExcel() {
     reader.readAsArrayBuffer(file);
 }
 
-// New helper functions from the provided code
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
-    const regex = /(\d+)\s*HOURS?/, hoursMatch = cycleTimeString.match(regex);
-    const regexMinutes = /(\d+)\s*MINUTES?/, minutesMatch = cycleTimeString.match(regexMinutes);
-    const regexSeconds = /(\d+)\s*SECONDS?/, secondsMatch = cycleTimeString.match(regexSeconds);
-
-    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
-    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-    const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
-
-    return (hours * 3600) + (minutes * 60) + seconds;
+    const regex = /(\d+)h\s*(\d+)m\s*(\d+)s/, match = cycleTimeString.match(regex);
+    if (match) {
+        const hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const seconds = parseInt(match[3]);
+        return (hours * 3600) + (minutes * 60) + seconds;
+    }
+    return 0; // If format doesn't match, return 0
 }
 
 function formatCycleTime(totalSeconds) {
