@@ -131,9 +131,11 @@ function extractCycleTime(text) {
     for (const line of lines) {
         if (line.includes("TOTAL CYCLE TIME")) {
             // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
-            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+            const regex = /(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
             const match = line.match(regex);
-            return match ? match[1] : null; // Return just the time part or null
+            if (match) {
+                return `${match[1]}h ${match[2]}m ${match[3]}s`;
+            }
         }
     }
     return null; // Return null if no match is found
