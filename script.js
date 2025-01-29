@@ -36,20 +36,22 @@ async function processFiles() {
             reader.onload = async (event) => {
                 const content = event.target.result;
                 let cycleTime = null;
+                let programName = null;
 
                 if (file.type === 'application/pdf') {
                     // Handle PDF files
                     const text = await parsePDF(content);
-                    cycleTime = extractCycleTime(text);
+                    ({ cycleTime, programName } = extractCycleTimeAndProgram(text));
                 } else {
                     // Handle text files
-                    cycleTime = extractCycleTime(content);
+                    ({ cycleTime, programName } = extractCycleTimeAndProgram(content));
                 }
 
-                // Add result to the table
-                results.push({ fileName: file.name, cycleTime });
+                // Add result to the table, now including program name
+                results.push({ fileName: file.name, cycleTime, programName });
                 const row = resultsTable.insertRow();
                 row.insertCell().textContent = file.name;
+                row.insertCell().textContent = programName || 'Not Found';
                 row.insertCell().textContent = cycleTime || 'Not Found';
             };
 
@@ -68,16 +70,30 @@ async function processFiles() {
     }
 }
 
-function extractCycleTime(text) {
+function extractCycleTimeAndProgram(text) {
     const lines = text.split('\n');
+    let cycleTime = null;
+    let programName = null;
+
+    // Look for program name in the first few lines
+    for (let i = 0; i < Math.min(5, lines.length); i++) {  // Check first 5 lines or less if the PDF has fewer lines
+        if (lines[i].includes("Program Name") || lines[i].includes("Project Name")) { // Adjust based on what your PDFs might use
+            programName = lines[i].replace(/Program Name:|Project Name:/i, '').trim();
+            break;
+        }
+    }
+
+    // Then look for the cycle time as before
     for (const line of lines) {
         if (line.includes("TOTAL CYCLE TIME") || line.includes("Subtotal")) {
             const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)|(\$\d+(?:\.\d{2})?)/i;
             const match = line.match(regex);
-            return match ? match[0] : null;
+            cycleTime = match ? match[0] : null;
+            break; // Exit loop once cycle time is found
         }
     }
-    return null;
+
+    return { cycleTime, programName };
 }
 
 // Parse PDF content using pdf.js
@@ -158,8 +174,15 @@ function updateToExcel() {
         // Now we go through the excelRows and match the project name with the 'Item No.' column
         excelRows.forEach((row, rowIndex) => {
             const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
-            if (cycleTimeSums[itemNo]) {
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming 'Total Cycle Time' is in column 4 (index 3)
+            
+            // Find corresponding result by file name
+            const result = results.find(r => r.fileName.includes(itemNo));
+            
+            if (result) {
+                // Update cycle time
+                row[3] = formatCycleTime(parseCycleTime(result.cycleTime)); // Assuming 'Total Cycle Time' is in column 4 (index 3)
+                // Add program name if you want to include it in the Excel sheet
+                row[1] = result.programName || ''; // Assuming you want program name in column 2 (index 1)
             }
         });
 
