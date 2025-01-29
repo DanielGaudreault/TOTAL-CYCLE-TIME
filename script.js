@@ -1,7 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('processButton').addEventListener('click', processFiles);
-    document.getElementById('resetButton').addEventListener('click', resetResults);
-    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+    // Check if elements exist before adding listeners
+    const processButton = document.getElementById('processButton');
+    const resetButton = document.getElementById('resetButton');
+    const uploadExcelButton = document.getElementById('uploadExcelButton');
+
+    if (processButton) {
+        processButton.addEventListener('click', processFiles);
+    } else {
+        console.error('Process button not found in DOM');
+    }
+
+    if (resetButton) {
+        resetButton.addEventListener('click', resetResults);
+    } else {
+        console.error('Reset button not found in DOM');
+    }
+
+    if (uploadExcelButton) {
+        uploadExcelButton.addEventListener('click', updateToExcel);
+    } else {
+        console.error('Upload Excel button not found in DOM');
+    }
 });
 
 let results = [];
@@ -10,6 +29,11 @@ async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+
+    if (!fileInput || !loading || !resultsTable) {
+        console.error('One or more required elements not found in DOM');
+        return;
+    }
 
     if (fileInput.files.length === 0) {
         alert('Please select at least one file.');
@@ -105,15 +129,17 @@ function parsePDF(data) {
 
 function resetResults() {
     results = [];
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = '';
+    const resultsTable = document.getElementById('resultsTable');
+    if (resultsTable) {
+        resultsTable.getElementsByTagName('tbody')[0].innerHTML = '';
+    }
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadExcelInput').value = '';
 }
 
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
-    const file = fileInput.files[0];
+    const file = fileInput ? fileInput.files[0] : null;
 
     if (!file) {
         alert('Please select an Excel file to update.');
@@ -127,4 +153,81 @@ function updateToExcel() {
 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        let excel
+        let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+        console.log("Original Excel Rows:", excelRows);
+
+        let cycleTimeSums = {};
+        let totalCycleTime = 0;
+
+        results.forEach(result => {
+            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
+            if (!matchIdentifier) {
+                console.error('Could not extract project name from PDF file name:', result.fileName);
+                return;
+            }
+
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
+            if (!isNaN(cycleTimeInSeconds)) {
+                totalCycleTime += cycleTimeInSeconds;
+                cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
+                console.log(`Added ${cycleTimeInSeconds} seconds to ${matchIdentifier}.`);
+            } else {
+                console.error('Could not parse cycle time for:', result.fileName);
+            }
+        });
+
+        console.log("Cycle Time Sums:", cycleTimeSums);
+        console.log("Total Cycle Time:", totalCycleTime);
+
+        // Adding subtotals for each project
+        Object.keys(cycleTimeSums).forEach(project => {
+            excelRows.push([
+                `Subtotal for ${project}`,
+                '', 
+                '', 
+                formatCycleTime(cycleTimeSums[project])
+            ]);
+            console.log(`Added subtotal for ${project}: ${formatCycleTime(cycleTimeSums[project])}`);
+        });
+
+        // Adding the total cycle time at the very end
+        excelRows.push([
+            'Net Total Cycle Time', 
+            '', 
+            '', 
+            formatCycleTime(totalCycleTime)
+        ]);
+        console.log(`Added net total cycle time: ${formatCycleTime(totalCycleTime)}`);
+
+        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+        const newWB = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+
+        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+        console.log("Updated Excel sheet has been saved.");
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseCycleTime(cycleTimeString) {
+    if (!cycleTimeString) return 0;
+
+    const regex = /(\d+)\s*HOURS?/, hoursMatch = cycleTimeString.match(regex);
+    const regexMinutes = /(\d+)\s*MINUTES?/, minutesMatch = cycleTimeString.match(regexMinutes);
+    const regexSeconds = /(\d+)\s*SECONDS?/, secondsMatch = cycleTimeString.match(regexSeconds);
+
+    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+    const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+
+    return (hours * 3600) + (minutes * 60) + seconds;
+}
+
+function formatCycleTime(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours} HOURS, ${minutes} MINUTES, ${seconds} SECONDS`;
+}
