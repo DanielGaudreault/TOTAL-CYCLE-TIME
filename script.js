@@ -29,11 +29,13 @@ async function processFiles() {
             if (file.type === 'application/pdf') {
                 const text = await parsePDF(content);
                 cycleTime = extractCycleTime(text);
+                const projectName = extractProjectNameFromPDF(text);
+                results.push({ fileName: file.name, cycleTime, projectName });
             } else {
                 cycleTime = extractCycleTime(content);
+                results.push({ fileName: file.name, cycleTime });
             }
 
-            results.push({ fileName: file.name, cycleTime });
             const row = resultsTable.insertRow();
             row.insertCell().textContent = file.name;
             row.insertCell().textContent = cycleTime || 'Not Found';
@@ -101,6 +103,20 @@ function parsePDF(data) {
     });
 }
 
+function extractProjectNameFromPDF(text) {
+    // Assuming the project name is the first line or close to it on each page
+    const lines = text.split('\n');
+    for (let line of lines) {
+        // Simplified regex to match project name, adjust as per the actual format
+        const nameMatch = line.match(/^(.*?)\s*$/);
+        if (nameMatch && nameMatch[1].trim()) {
+            return nameMatch[1].trim();
+        }
+    }
+    console.warn('Could not extract project name from PDF');
+    return null;
+}
+
 function resetResults() {
     results = [];
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
@@ -131,34 +147,34 @@ function updateToExcel() {
         let totalCycleTime = 0;
 
         results.forEach(result => {
-            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
-            if (!matchIdentifier) {
-                console.warn('Could not extract project name from PDF file name:', result.fileName);
+            const projectName = result.projectName || result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
+            if (!projectName) {
+                console.warn('Could not determine project name from:', result.fileName);
                 return;
             }
 
             const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
             if (!isNaN(cycleTimeInSeconds)) {
                 totalCycleTime += cycleTimeInSeconds;
-                cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
+                cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
             } else {
                 console.error('Could not parse cycle time for:', result.fileName);
             }
         });
 
-        // Update existing rows in Excel, adding cycle times to column D (index 3)
+        // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
         excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
+            const itemNo = row[1]?.toString().trim(); // 'Item No.' is now in column B (index 1)
             if (cycleTimeSums[itemNo]) {
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
             }
         });
 
         // Add summary rows
         Object.keys(cycleTimeSums).forEach(project => {
             excelRows.push([
-                `Subtotal for ${project}`,
-                '', 
+                '', // Empty for column A
+                `Subtotal for ${project}`, // Column B for 'Item No.'
                 '', 
                 formatCycleTime(cycleTimeSums[project])
             ]);
@@ -166,8 +182,8 @@ function updateToExcel() {
 
         // Add total cycle time at the end
         excelRows.push([
-            'Net Total Cycle Time', 
-            '', 
+            '', // Empty for column A
+            'Net Total Cycle Time', // Column B for 'Item No.'
             '', 
             formatCycleTime(totalCycleTime)
         ]);
