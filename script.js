@@ -159,86 +159,97 @@ function updateToExcel() {
         return;
     }
 
-    console.log('File selected:', file.name);
+    console.log('File selected:', file.name, file.type);
 
     const reader = new FileReader();
     reader.onload = function(e) {
         console.log('File read completed');
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
 
-        console.log('Workbook parsed:', workbook);
+            console.log('Workbook parsed:', workbook);
 
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        console.log('Original Excel Rows:', excelRows);
+            console.log('Original Excel Rows:', excelRows);
 
-        let cycleTimeSums = {};
-        let totalCycleTime = 0;
+            let cycleTimeSums = {};
+            let totalCycleTime = 0;
 
-        results.forEach(result => {
-            const projectName = result.projectNameLine ? result.projectNameLine.split(':')[1].trim() : null;
-            if (!projectName) {
-                console.warn('Could not determine project name from:', result.fileName);
-                return;
-            }
+            results.forEach(result => {
+                const projectName = result.projectNameLine ? result.projectNameLine.split(':')[1].trim() : null;
+                if (!projectName) {
+                    console.warn('Could not determine project name from:', result.fileName);
+                    return;
+                }
 
-            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-            if (!isNaN(cycleTimeInSeconds)) {
-                totalCycleTime += cycleTimeInSeconds;
-                cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
-            } else {
-                console.error('Could not parse cycle time for:', result.fileName);
-            }
-        });
+                const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
+                if (!isNaN(cycleTimeInSeconds)) {
+                    totalCycleTime += cycleTimeInSeconds;
+                    cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
+                } else {
+                    console.error('Could not parse cycle time for:', result.fileName);
+                }
+            });
 
-        console.log("CycleTimeSums:", cycleTimeSums);
+            console.log("CycleTimeSums:", cycleTimeSums);
 
-        // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
-        excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
-            if (cycleTimeSums[itemNo]) {
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
-                console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
-            } else {
-                console.log(`No match found for Item No.: ${itemNo}`);
-            }
-        });
+            // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
+            excelRows.forEach((row, rowIndex) => {
+                const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                if (cycleTimeSums[itemNo]) {
+                    row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
+                    console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
+                } else {
+                    console.log(`No match found for Item No.: ${itemNo}`);
+                }
+            });
 
-        // Add summary rows
-        Object.keys(cycleTimeSums).forEach(project => {
+            // Add summary rows
+            Object.keys(cycleTimeSums).forEach(project => {
+                excelRows.push([
+                    '', // Empty for column A
+                    `Subtotal for ${project}`, // Column B for 'Item No.'
+                    '', 
+                    formatCycleTime(cycleTimeSums[project])
+                ]);
+            });
+
+            // Add total cycle time at the end
             excelRows.push([
                 '', // Empty for column A
-                `Subtotal for ${project}`, // Column B for 'Item No.'
+                'Net Total Cycle Time', // Column B for 'Item No.'
                 '', 
-                formatCycleTime(cycleTimeSums[project])
+                formatCycleTime(totalCycleTime)
             ]);
-        });
 
-        // Add total cycle time at the end
-        excelRows.push([
-            '', // Empty for column A
-            'Net Total Cycle Time', // Column B for 'Item No.'
-            '', 
-            formatCycleTime(totalCycleTime)
-        ]);
+            console.log("Updated Excel Rows:", excelRows);
 
-        console.log("Updated Excel Rows:", excelRows);
-
-        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
-        const newWB = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-        
-        console.log('Attempting to save new Excel file');
-        try {
-            XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-            console.log('Excel sheet updated and saved.');
-        } catch (error) {
-            console.error('Error saving Excel file:', error);
-            alert('An error occurred while saving the Excel file.');
+            const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+            const newWB = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+            
+            console.log('Attempting to save new Excel file');
+            try {
+                XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+                console.log('Excel sheet updated and saved.');
+                alert('Excel file has been updated and saved as "updated_cycle_times.xlsx".');
+            } catch (saveError) {
+                console.error('Error saving Excel file:', saveError);
+                alert('An error occurred while saving the Excel file. Check console for details.');
+            }
+        } catch (readError) {
+            console.error('Error reading or parsing Excel file:', readError);
+            alert('Failed to read or parse the Excel file. Please check if it\'s a valid Excel document.');
+            return;
         }
+    };
+    reader.onerror = function(error) {
+        console.error('Error reading file:', error);
+        alert('There was an error reading the file. Please try again with a different file.');
     };
     reader.readAsArrayBuffer(file);
 }
