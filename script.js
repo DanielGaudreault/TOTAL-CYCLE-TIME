@@ -133,7 +133,7 @@ function updateToExcel() {
         results.forEach(result => {
             const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
             if (!matchIdentifier) {
-                console.error('Could not extract match identifier from PDF file name:', result.fileName);
+                console.error('Could not extract project name from PDF file name:', result.fileName);
                 return;
             }
 
@@ -144,14 +144,14 @@ function updateToExcel() {
         });
 
         excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[0]?.toString().trim();
+            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is the first column
             if (cycleTimeSums[itemNo]) {
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]);
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming column D (index 3) for cycle time
             }
         });
 
         excelRows.push([
-            'Net Total Cycle Time',
+            'Net Total Cycle Time', 
             '', 
             '', 
             formatCycleTime(totalCycleTime)
