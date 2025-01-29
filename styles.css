@@ -1,7 +1,6 @@
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f0f8ff;
-    color: #333;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
     margin: 0;
     padding: 0;
     display: flex;
@@ -11,41 +10,18 @@ body {
 }
 
 .container {
-    background: #ffffff;
+    background: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
     width: 80%;
     max-width: 1000px;
 }
 
 h1 {
-    color: #0066cc;
     text-align: center;
+    color: #333;
     margin-bottom: 20px;
-}
-
-button {
-    background-color: #0066cc;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin: 5px;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.3s, transform 0.1s;
-    font-size: 16px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-button:hover {
-    background-color: #004c99;
-    transform: translateY(-2px);
-}
-
-button:active {
-    transform: translateY(0);
 }
 
 .file-section, .upload-section {
@@ -54,59 +30,60 @@ button:active {
     margin-bottom: 20px;
 }
 
-input[type="file"] {
-    flex-grow: 1;
-    margin-right: 10px;
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #218838;
 }
 
 #loading {
     display: none;
     text-align: center;
-    color: #0066cc;
-    font-style: italic;
-    margin: 10px 0;
+    margin-bottom: 20px;
+    color: #007bff;
 }
 
-#resultsTable {
+table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    margin-bottom: 20px;
 }
 
-#resultsTable th, #resultsTable td {
-    padding: 12px;
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
 }
 
-#resultsTable th {
-    background-color: #0066cc;
+th {
+    background-color: #007bff;
     color: white;
 }
 
-#resultsTable tr:nth-child(even) {
+tr:nth-child(even) {
     background-color: #f2f2f2;
 }
 
-input[type="file"]:focus, input[type="file"]:hover {
-    border-color: #004c99;
-    background-color: #e6f2ff;
+input[type="file"] {
+    flex-grow: 1;
+    margin-right: 10px;
 }
 
 @media (max-width: 600px) {
     .file-section, .upload-section {
         flex-direction: column;
     }
-    
     input[type="file"], button {
         width: 100%;
         margin: 5px 0;
-    }
-
-    h1 {
-        font-size: 20px;
-    }
-    button, input[type="file"] {
-        font-size: 14px;
     }
 }
