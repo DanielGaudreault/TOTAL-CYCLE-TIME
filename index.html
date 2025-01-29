@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Cycle Time Extractor</title>
+    <title>Cycle Time Extractor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>PDF Cycle Time Extractor</h1>
-        <input type="file" id="pdfFiles" name="pdfFiles" multiple accept="application/pdf">
-        <button id="processBtn">Process PDFs</button>
-        <div id="output"></div>
+        <h1>Cycle Time Extractor</h1>
+        <input type="file" id="fileInput" multiple accept="application/pdf">
+        <button id="processButton">Process Files</button>
+        <button id="resetButton">Reset Results</button>
+        <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
+        <button id="uploadExcelButton">Upload to Excel</button>
+        <div id="loading" style="display: none;">Processing...</div>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Cycle Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfjs-dist/2.5.207/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
