@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 let results = []; // Store results for all files
 
 // Process selected files (PDFs or text)
-function processFiles() {
+async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
@@ -26,13 +26,14 @@ function processFiles() {
     results = [];
     resultsTable.innerHTML = '';
     loading.style.display = 'block';
+    loading.textContent = 'Processing files...';
 
     const files = Array.from(fileInput.files);
 
-    const promises = files.map(file => {
-        const reader = new FileReader();
-        return new Promise((resolve, reject) => {
-            reader.onload = async function (event) {
+    try {
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
                 const content = event.target.result;
                 let cycleTime = null;
 
@@ -50,74 +51,49 @@ function processFiles() {
                 const row = resultsTable.insertRow();
                 row.insertCell().textContent = file.name;
                 row.insertCell().textContent = cycleTime || 'Not Found';
-
-                resolve(); // Signal that this file has been processed
             };
-
-            reader.onerror = reject;
 
             if (file.type === 'application/pdf') {
                 reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
             } else {
                 reader.readAsText(file); // Read text files as text
             }
-        });
-    });
-
-    Promise.all(promises).then(() => {
-        loading.style.display = 'none';
-    }).catch(error => {
+        }
+        loading.textContent = 'Files processed!';
+    } catch (error) {
         console.error("File processing failed:", error);
+        alert('An error occurred while processing the files. Please try again.');
+    } finally {
         loading.style.display = 'none';
-    });
+    }
 }
 
 function extractCycleTime(text) {
-    const lines = text.split('\n'); // Split text into lines
+    const lines = text.split('\n');
     for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME")) {
-            // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
-            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+        if (line.includes("TOTAL CYCLE TIME") || line.includes("Subtotal")) {
+            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)|(\$\d+(?:\.\d{2})?)/i;
             const match = line.match(regex);
-            return match ? match[0] : null; // Return the matched time or null
+            return match ? match[0] : null;
         }
     }
-    return null; // Return null if no match is found
+    return null;
 }
 
 // Parse PDF content using pdf.js
-function parsePDF(data) {
-    return new Promise((resolve, reject) => {
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function parsePDF(data) {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        const loadingTask = pdfjsLib.getDocument({ data });
-        loadingTask.promise.then(pdf => {
-            let text = '';
-            const numPages = pdf.numPages;
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    let text = '';
 
-            const fetchPage = (pageNum) => {
-                return pdf.getPage(pageNum).then(page => {
-                    return page.getTextContent().then(textContent => {
-                        let pageText = '';
-                        textContent.items.forEach(item => {
-                            pageText += item.str + ' ';
-                        });
-                        text += pageText + '\n'; // Add newline after each page
-                    });
-                });
-            };
-
-            const fetchAllPages = async () => {
-                for (let i = 1; i <= numPages; i++) {
-                    await fetchPage(i);
-                }
-                resolve(text);
-            };
-
-            fetchAllPages();
-        }).catch(reject);
-    });
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        text += textContent.items.map(item => item.str).join(' ') + '\n';
+    }
+    return text;
 }
 
 // Reset the results
@@ -152,20 +128,25 @@ function updateToExcel() {
         // Create an object to store the total cycle time for each project
         let cycleTimeSums = {};
         let totalCycleTime = 0; // Variable to store the total cycle time for all PDFs
+        let subtotalSum = 0; // To store all subtotals
 
         // Process each result from the PDFs
         results.forEach(result => {
-            // Extract the project name from the PDF filename, assuming it's something like "Project Name - Identifier"
-            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim(); // Adjusting regex
+            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
 
             if (!matchIdentifier) {
                 console.error('Could not extract match identifier from PDF file name:', result.fileName);
                 return; // Skip this result if we can't find a match identifier
             }
 
-            // If the project already exists in the cycleTimeSums map, add the cycle time, otherwise set it
             const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-            totalCycleTime += cycleTimeInSeconds; // Accumulate the total cycle time
+            const subtotalMatch = result.cycleTime.match(/\$\d+(?:\.\d{2})?/);
+
+            if (subtotalMatch) {
+                subtotalSum += parseFloat(subtotalMatch[0].replace('$', ''));
+            }
+
+            totalCycleTime += cycleTimeInSeconds;
 
             if (cycleTimeSums[matchIdentifier]) {
                 cycleTimeSums[matchIdentifier] += cycleTimeInSeconds;
@@ -174,11 +155,10 @@ function updateToExcel() {
             }
         });
 
-        // Now we go through the excelRows and match the project name (from the cycleTimeSums) with the 'Item No.' column
+        // Now we go through the excelRows and match the project name with the 'Item No.' column
         excelRows.forEach((row, rowIndex) => {
             const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
             if (cycleTimeSums[itemNo]) {
-                // Match found, update the cycle time sum in the 'Total Cycle Time' column (assuming column D is where it goes)
                 row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming 'Total Cycle Time' is in column 4 (index 3)
             }
         });
@@ -191,13 +171,25 @@ function updateToExcel() {
             formatCycleTime(totalCycleTime) // Total cycle time in the fourth column
         ]);
 
+        // Add another row for the sum of subtotals
+        excelRows.push([
+            'Sum of Subtotals', 
+            '', 
+            '', 
+            `$${subtotalSum.toFixed(2)}`
+        ]);
+
         // Convert the updated data back to worksheet format
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
         // Save the new workbook
-        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx', {bookType:'xlsx', type: 'base64'});
+    };
+    reader.onerror = function(error) {
+        console.error("Error reading file:", error);
+        alert('An error occurred while reading the file. Please try again.');
     };
     reader.readAsArrayBuffer(file);
 }
