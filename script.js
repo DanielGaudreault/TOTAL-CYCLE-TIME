@@ -32,8 +32,10 @@ async function processFiles() {
             if (file.type === 'application/pdf') {
                 const content = await readFile(file);
                 const text = await parsePDF(content);
+                console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
+                console.log('Extracted Cycle Time:', cycleTime);
                 if (projectNameLine || cycleTime) {
                     results.push({ fileName: file.name, projectNameLine, cycleTime });
 
@@ -126,10 +128,10 @@ function extractProjectNameLine(text) {
 function extractCycleTime(text) {
     const lines = text.split('\n');
     for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME")) {
-            const regex = /TOTAL CYCLE TIME:\s*(.*)/i;
-            const match = line.match(regex);
-            return match ? match[1].trim() : null;
+        const regex = /TOTAL CYCLE TIME:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)/i;
+        const match = line.match(regex);
+        if (match && match[1]) {
+            return match[1].trim();
         }
     }
     console.warn('Could not find "TOTAL CYCLE TIME" in the PDF');
