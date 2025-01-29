@@ -3,30 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cycle Time Extractor</title>
+    <title>File Processor</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Cycle Time Extractor</h1>
-        <input type="file" id="fileInput" multiple accept="application/pdf">
-        <button id="processButton">Process Files</button>
-        <button id="resetButton">Reset Results</button>
-        <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
-        <button id="uploadExcelButton">Upload to Excel</button>
-        <div id="loading" style="display: none;">Processing...</div>
+        <h1>File Processor</h1>
+        <div class="file-section">
+            <input type="file" id="fileInput" multiple>
+            <button id="processButton">Process Files</button>
+            <button id="resetButton">Reset Results</button>
+        </div>
+        <div id="loading" class="loading">Processing...</div>
+        <div class="upload-section">
+            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
+            <button id="uploadExcelButton">Update to Excel</button>
+        </div>
         <table id="resultsTable">
             <thead>
                 <tr>
                     <th>File Name</th>
-                    <th>Cycle Time</th>
+                    <th>Total Cycle Time</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
     <script src="script.js"></script>
 </body>
 </html>
