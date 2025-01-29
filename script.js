@@ -146,12 +146,11 @@ function updateToExcel() {
             }
         });
 
-        // Update existing rows in Excel
+        // Update existing rows in Excel, adding cycle times to column D (index 3)
         excelRows.forEach((row, rowIndex) => {
             const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
             if (cycleTimeSums[itemNo]) {
-                // Update the cycle time in column D (index 3)
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]);
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D
             }
         });
 
@@ -165,7 +164,7 @@ function updateToExcel() {
             ]);
         });
 
-        // Add total cycle time
+        // Add total cycle time at the end
         excelRows.push([
             'Net Total Cycle Time', 
             '', 
