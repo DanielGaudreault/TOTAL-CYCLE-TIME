@@ -12,14 +12,18 @@
     <div class="container">
         <h1>File Processor</h1>
         <div class="file-section">
-            <input type="file" id="fileInput" multiple>
-            <button id="processButton">Process Files</button>
-            <button id="resetButton">Reset Results</button>
+            <form>
+                <input type="file" id="fileInput" multiple aria-label="Select files to process">
+                <button id="processButton" type="button">Process Files</button>
+                <button id="resetButton" type="button">Reset Results</button>
+            </form>
         </div>
         <div id="loading" class="loading">Processing...</div>
         <div class="upload-section">
-            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
-            <button id="uploadExcelButton">Update to Excel</button>
+            <form>
+                <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Select Excel file to update">
+                <button id="uploadExcelButton" type="button">Update to Excel</button>
+            </form>
         </div>
         <table id="resultsTable">
             <thead>
