@@ -144,41 +144,37 @@ function updateToExcel() {
         // Create a new array for the updated rows
         let newExcelRows = [];
 
-        // Calculate totals like before
+        // Calculate totals
         let cycleTimeSums = {};
         let totalCycleTime = 0;
         let subtotalSum = 0;
 
         results.forEach(result => {
-            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-            const subtotalMatch = result.cycleTime.match(/\$\d+(?:\.\d{2})?/);
-
-            if (subtotalMatch) {
-                subtotalSum += parseFloat(subtotalMatch[0].replace('$', ''));
-            }
-
-            totalCycleTime += cycleTimeInSeconds;
-
-            // Here, we'll use the program name directly as the key instead of matching by file name
             if (result.programName) {
-                if (cycleTimeSums[result.programName]) {
-                    cycleTimeSums[result.programName] += cycleTimeInSeconds;
-                } else {
-                    cycleTimeSums[result.programName] = cycleTimeInSeconds;
+                // Parse cycle time for each result
+                let cycleTimeInSeconds = parseCycleTime(result.cycleTime) || 0; // Ensure we have a number
+                totalCycleTime += cycleTimeInSeconds;
+
+                // Handle subtotals
+                const subtotalMatch = result.cycleTime.match(/\$\d+(?:\.\d{2})?/);
+                if (subtotalMatch) {
+                    subtotalSum += parseFloat(subtotalMatch[0].replace('$', ''));
                 }
+
+                // Sum up cycle time for each program
+                cycleTimeSums[result.programName] = (cycleTimeSums[result.programName] || 0) + cycleTimeInSeconds;
             }
         });
 
-        // Create a new structure where we match by program name
+        // Update rows with new data
         excelRows.forEach(row => {
             let newRow = [...row]; // Create a copy of the row
             const programName = row[1]?.toString().trim(); // Program Name in column B (index 1)
 
             if (cycleTimeSums[programName]) {
-                // If there's a match, update the cycle time
                 newRow[3] = formatCycleTime(cycleTimeSums[programName]); // Total Cycle Time in column D (index 3)
             } else {
-                // If no match, keep the original cycle time or set to empty if there was none
+                // Keep original or set to empty string if there was no previous value
                 newRow[3] = row[3] || '';
             }
 
