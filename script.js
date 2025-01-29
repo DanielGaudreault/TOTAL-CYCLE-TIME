@@ -79,6 +79,7 @@ function extractCycleTimeAndProgram(text) {
     for (let i = 0; i < Math.min(5, lines.length); i++) {  // Check first 5 lines or less if the PDF has fewer lines
         if (lines[i].includes("Program Name") || lines[i].includes("Project Name")) { // Adjust based on what your PDFs might use
             programName = lines[i].replace(/Program Name:|Project Name:/i, '').trim();
+            console.log("Extracted Program Name:", programName);
             break;
         }
     }
@@ -89,6 +90,7 @@ function extractCycleTimeAndProgram(text) {
             const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)|(\$\d+(?:\.\d{2})?)/i;
             const match = line.match(regex);
             cycleTime = match ? match[0] : null;
+            console.log("Extracted Cycle Time:", cycleTime);
             break; // Exit loop once cycle time is found
         }
     }
@@ -123,8 +125,11 @@ function resetResults() {
 
 // Update Excel with the summed cycle times and the net total cycle time
 function updateToExcel() {
+    console.log("Update to Excel function triggered");
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
+    
+    console.log("File selected:", file ? file.name : "No file selected");
 
     if (!file) {
         alert('Please select an Excel file to update.');
