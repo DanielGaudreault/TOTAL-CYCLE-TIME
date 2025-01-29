@@ -45,7 +45,7 @@ async function processFiles() {
                     const cell3 = row.insertCell(2);
                     cell1.textContent = file.name;
                     cell2.textContent = projectNameLine || 'Not Found';
-                    cell3.textContent = cycleTimeLine || 'Not Found';
+                    cell3.textContent = cycleTimeLine ? extractCycleTimeOnly(cycleTimeLine) : 'Not Found'; // Changed here
                 } else {
                     console.log('Project name or cycle time line not found for file:', file.name);
                     results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTimeLine: 'Not Found' });
@@ -134,6 +134,13 @@ function extractCycleTimeLine(text) {
     }
     console.warn('Could not find "TOTAL CYCLE TIME:" in the PDF');
     return null;
+}
+
+// New function to extract only the time part from the cycle time line
+function extractCycleTimeOnly(cycleTimeLine) {
+    const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+    const match = cycleTimeLine.match(regex);
+    return match ? match[1] : 'Not Found';
 }
 
 function resetResults() {
