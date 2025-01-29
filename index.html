@@ -3,35 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Processor</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <title>PDF and Excel Processor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        /* Basic styling for the application */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+        #loading {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>File Processor</h1>
-        <div class="file-section">
-            <input type="file" id="fileInput" multiple>
-            <button id="processButton">Process Files</button>
-            <button id="resetButton">Reset Results</button>
-        </div>
-        <div id="loading" class="loading">Processing...</div>
-        <div class="upload-section">
-            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
-            <button id="uploadExcelButton">Update to Excel</button>
-        </div>
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Total Cycle Time</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
 
-    <script src="script.js"></script>
+    <input type="file" id="fileInput" multiple accept=".pdf,.txt">
+    <button id="processButton">Process Files</button>
+    <button id="resetButton">Reset Results</button>
+    
+    <div id="loading">Loading...</div>
+
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Program Name</th>
+                <th>Cycle Time</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <br>
+
+    <input type="file" id="uploadExcelInput" accept=".xlsx">
+    <button id="uploadExcelButton">Update to Excel</button>
+
+    <script>
+        // Your JavaScript code goes here or link to an external .js file
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... (all your JavaScript code you've provided goes here)
+        });
+
+        // Include the rest of the functions here or in an external JS file
+    </script>
 </body>
 </html>
