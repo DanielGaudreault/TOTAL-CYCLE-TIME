@@ -34,10 +34,10 @@ async function processFiles() {
                 const text = await parsePDF(content);
                 console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
-                const cycleTime = extractCycleTime(text);
-                console.log('Extracted Cycle Time:', cycleTime);
-                if (projectNameLine || cycleTime) {
-                    results.push({ fileName: file.name, projectNameLine, cycleTime });
+                const cycleTimeLine = extractCycleTimeLine(text);
+                console.log('Extracted Cycle Time Line:', cycleTimeLine);
+                if (projectNameLine || cycleTimeLine) {
+                    results.push({ fileName: file.name, projectNameLine, cycleTimeLine });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
@@ -45,10 +45,10 @@ async function processFiles() {
                     const cell3 = row.insertCell(2);
                     cell1.textContent = file.name;
                     cell2.textContent = projectNameLine || 'Not Found';
-                    cell3.textContent = cycleTime || 'Not Found';
+                    cell3.textContent = cycleTimeLine || 'Not Found';
                 } else {
-                    console.log('Project name or cycle time not found for file:', file.name);
-                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTime: 'Not Found' });
+                    console.log('Project name or cycle time line not found for file:', file.name);
+                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTimeLine: 'Not Found' });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
@@ -125,16 +125,14 @@ function extractProjectNameLine(text) {
     return null;
 }
 
-function extractCycleTime(text) {
+function extractCycleTimeLine(text) {
     const lines = text.split('\n');
     for (const line of lines) {
-        const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
-        const match = line.match(regex);
-        if (match && match[1] && match[2] && match[3]) {
-            return `${match[1]}h ${match[2]}m ${match[3]}s`;
+        if (line.includes("TOTAL CYCLE TIME:")) {
+            return line.trim();
         }
     }
-    console.warn('Could not find "TOTAL CYCLE TIME" in the PDF');
+    console.warn('Could not find "TOTAL CYCLE TIME:" in the PDF');
     return null;
 }
 
@@ -176,7 +174,7 @@ function updateToExcel() {
                 return;
             }
 
-            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTimeLine);
             if (!isNaN(cycleTimeInSeconds)) {
                 totalCycleTime += cycleTimeInSeconds;
                 cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
@@ -228,9 +226,10 @@ function updateToExcel() {
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
-    const regex = /(\d+)h\s*(\d+)m\s*(\d+)s/, match = cycleTimeString.match(regex);
+    const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
+    const match = cycleTimeString.match(regex);
 
-    if (match) {
+    if (match && match[1] && match[2] && match[3]) {
         const hours = parseInt(match[1]);
         const minutes = parseInt(match[2]);
         const seconds = parseInt(match[3]);
