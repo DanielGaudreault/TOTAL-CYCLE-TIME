@@ -152,14 +152,15 @@ function updateToExcel() {
 
         excelRows.push([
             'Net Total Cycle Time',
-            '',
-            '',
+            '', 
+            '', 
             formatCycleTime(totalCycleTime)
         ]);
 
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
     };
     reader.readAsArrayBuffer(file);
