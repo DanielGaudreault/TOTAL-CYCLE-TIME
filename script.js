@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
 let results = [];
@@ -31,26 +32,29 @@ async function processFiles() {
             if (file.type === 'application/pdf') {
                 const content = await readFile(file);
                 const text = await parsePDF(content);
-                console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
-                if (projectNameLine) {
-                    console.log('Found project name line:', projectNameLine);
-                    results.push({ fileName: file.name, projectNameLine });
+                const cycleTime = extractCycleTime(text);
+                if (projectNameLine || cycleTime) {
+                    results.push({ fileName: file.name, projectNameLine, cycleTime });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
                     const cell2 = row.insertCell(1);
+                    const cell3 = row.insertCell(2);
                     cell1.textContent = file.name;
-                    cell2.textContent = projectNameLine;
+                    cell2.textContent = projectNameLine || 'Not Found';
+                    cell3.textContent = cycleTime || 'Not Found';
                 } else {
-                    console.log('Project name line not found for file:', file.name);
-                    results.push({ fileName: file.name, projectNameLine: 'Not Found' });
+                    console.log('Project name or cycle time not found for file:', file.name);
+                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTime: 'Not Found' });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
                     const cell2 = row.insertCell(1);
+                    const cell3 = row.insertCell(2);
                     cell1.textContent = file.name;
                     cell2.textContent = 'Not Found';
+                    cell3.textContent = 'Not Found';
                 }
             }
         }
@@ -107,7 +111,6 @@ function parsePDF(data) {
 }
 
 function extractProjectNameLine(text) {
-    // Specific regex for your format
     const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
     const lines = text.split('\n');
     for (let line of lines) {
@@ -120,6 +123,19 @@ function extractProjectNameLine(text) {
     return null;
 }
 
+function extractCycleTime(text) {
+    const lines = text.split('\n');
+    for (const line of lines) {
+        if (line.includes("TOTAL CYCLE TIME")) {
+            const regex = /TOTAL CYCLE TIME:\s*(.*)/i;
+            const match = line.match(regex);
+            return match ? match[1].trim() : null;
+        }
+    }
+    console.warn('Could not find "TOTAL CYCLE TIME" in the PDF');
+    return null;
+}
+
 function resetResults() {
     results = [];
     const resultsTable = document.getElementById('resultsTable');
@@ -127,4 +143,104 @@ function resetResults() {
         resultsTable.querySelector('tbody').innerHTML = '';
     }
     document.getElementById('fileInput').value = '';
+    document.getElementById('uploadExcelInput').value = '';
+}
+
+function updateToExcel() {
+    const fileInput = document.getElementById('uploadExcelInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Please select an Excel file to update.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+        let cycleTimeSums = {};
+        let totalCycleTime = 0;
+
+        results.forEach(result => {
+            const projectName = result.projectNameLine ? result.projectNameLine.split(':')[1].trim() : null;
+            if (!projectName) {
+                console.warn('Could not determine project name from:', result.fileName);
+                return;
+            }
+
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
+            if (!isNaN(cycleTimeInSeconds)) {
+                totalCycleTime += cycleTimeInSeconds;
+                cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
+            } else {
+                console.error('Could not parse cycle time for:', result.fileName);
+            }
+        });
+
+        console.log("CycleTimeSums:", cycleTimeSums);
+
+        // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
+        excelRows.forEach((row, rowIndex) => {
+            const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+            if (cycleTimeSums[itemNo]) {
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
+                console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
+            } else {
+                console.log(`No match found for Item No.: ${itemNo}`);
+            }
+        });
+
+        // Add summary rows
+        Object.keys(cycleTimeSums).forEach(project => {
+            excelRows.push([
+                '', // Empty for column A
+                `Subtotal for ${project}`, // Column B for 'Item No.'
+                '', 
+                formatCycleTime(cycleTimeSums[project])
+            ]);
+        });
+
+        // Add total cycle time at the end
+        excelRows.push([
+            '', // Empty for column A
+            'Net Total Cycle Time', // Column B for 'Item No.'
+            '', 
+            formatCycleTime(totalCycleTime)
+        ]);
+
+        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+        const newWB = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+        console.log('Excel sheet updated and saved.');
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseCycleTime(cycleTimeString) {
+    if (!cycleTimeString) return 0;
+
+    const regex = /(\d+)\s*HOURS?/, hoursMatch = cycleTimeString.match(regex);
+    const regexMinutes = /(\d+)\s*MINUTES?/, minutesMatch = cycleTimeString.match(regexMinutes);
+    const regexSeconds = /(\d+)\s*SECONDS?/, secondsMatch = cycleTimeString.match(regexSeconds);
+
+    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+    const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+
+    return (hours * 3600) + (minutes * 60) + seconds;
+}
+
+function formatCycleTime(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours} HOURS, ${minutes} MINUTES, ${seconds} SECONDS`;
 }
