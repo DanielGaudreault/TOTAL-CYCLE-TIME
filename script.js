@@ -34,7 +34,7 @@ async function processFiles() {
                 const text = await parsePDF(content);
                 console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
-                const cycleTime = extractCycleTime(text); // Changed to use new extractCycleTime
+                const cycleTime = extractCycleTime(text);
                 console.log('Extracted Cycle Time:', cycleTime);
                 if (projectNameLine || cycleTime) {
                     results.push({ fileName: file.name, projectNameLine, cycleTime });
@@ -159,14 +159,21 @@ function updateToExcel() {
         return;
     }
 
+    console.log('File selected:', file.name);
+
     const reader = new FileReader();
     reader.onload = function(e) {
+        console.log('File read completed');
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
+
+        console.log('Workbook parsed:', workbook);
 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+        console.log('Original Excel Rows:', excelRows);
 
         let cycleTimeSums = {};
         let totalCycleTime = 0;
@@ -218,11 +225,20 @@ function updateToExcel() {
             formatCycleTime(totalCycleTime)
         ]);
 
+        console.log("Updated Excel Rows:", excelRows);
+
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-        console.log('Excel sheet updated and saved.');
+        
+        console.log('Attempting to save new Excel file');
+        try {
+            XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+            console.log('Excel sheet updated and saved.');
+        } catch (error) {
+            console.error('Error saving Excel file:', error);
+            alert('An error occurred while saving the Excel file.');
+        }
     };
     reader.readAsArrayBuffer(file);
 }
