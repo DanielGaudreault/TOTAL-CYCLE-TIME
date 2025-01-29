@@ -78,13 +78,25 @@ function extractCycleTimeAndProgram(text) {
     let cycleTime = null;
     let programName = null;
 
-    // Look for program name in the first few lines
-    for (let i = 0; i < Math.min(5, lines.length); i++) {  // Check first 5 lines or less if the PDF has fewer lines
-        if (lines[i].includes("Program Name") || lines[i].includes("Project Name")) { // Adjust based on what your PDFs might use
-            programName = lines[i].replace(/Program Name:|Project Name:/i, '').trim();
-            console.log("Extracted Program Name:", programName);
-            break;
+    // Look for the "GENERAL INFORMATION" section to find the project name
+    let generalInfoFound = false;
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes("GENERAL INFORMATION")) {
+            generalInfoFound = true;
+            // From this point, look for the project name in the next few lines
+            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                if (lines[j].includes("Project Name") || lines[j].includes("Program Name")) {
+                    programName = lines[j].replace(/Project Name:|Program Name:/i, '').trim();
+                    console.log("Extracted Program Name:", programName);
+                    break;
+                }
+            }
+            break; // Exit the loop once GENERAL INFORMATION is found
         }
+    }
+
+    if (!generalInfoFound) {
+        console.warn("GENERAL INFORMATION section not found in the document.");
     }
 
     // Then look for the cycle time as before
