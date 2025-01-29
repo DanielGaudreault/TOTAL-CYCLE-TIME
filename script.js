@@ -8,7 +8,13 @@ let results = [];
 async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    const resultsTable = document.getElementById('resultsTable');
+    const tbody = resultsTable ? resultsTable.querySelector('tbody') : null;
+
+    if (!fileInput || !loading || !resultsTable || !tbody) {
+        console.error('Required elements not found in the DOM');
+        return;
+    }
 
     if (fileInput.files.length === 0) {
         alert('Please select at least one file.');
@@ -16,7 +22,7 @@ async function processFiles() {
     }
 
     results = [];
-    resultsTable.innerHTML = '';
+    tbody.innerHTML = '';
     loading.style.display = 'block';
 
     try {
@@ -29,14 +35,23 @@ async function processFiles() {
                 const projectNameLine = extractProjectNameLine(text);
                 if (projectNameLine) {
                     console.log('Found project name line:', projectNameLine);
+                    results.push({ fileName: file.name, projectNameLine });
+
+                    const row = tbody.insertRow();
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+                    cell1.textContent = file.name;
+                    cell2.textContent = projectNameLine;
                 } else {
                     console.log('Project name line not found for file:', file.name);
-                }
-                results.push({ fileName: file.name, projectNameLine });
+                    results.push({ fileName: file.name, projectNameLine: 'Not Found' });
 
-                const row = resultsTable.insertRow();
-                row.insertCell().textContent = file.name;
-                row.insertCell().textContent = projectNameLine || 'Not Found';
+                    const row = tbody.insertRow();
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+                    cell1.textContent = file.name;
+                    cell2.textContent = 'Not Found';
+                }
             }
         }
     } catch (error) {
@@ -92,22 +107,24 @@ function parsePDF(data) {
 }
 
 function extractProjectNameLine(text) {
-    // Use a more flexible regex to match various formats of "PROJECT NAME:"
-    const regex = /(PROJECT\s*NAME\s*:|Project\s*Name\s*:|project\s*name\s*:)/i;
+    // Specific regex for your format
+    const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
     const lines = text.split('\n');
     for (let line of lines) {
-        if (regex.test(line)) {
-            // Return the whole line where "PROJECT NAME:", "Project Name:", or similar is found
-            return line.trim();
+        const match = line.match(regex);
+        if (match && match[1].trim()) {
+            return `PROJECT NAME: ${match[1].trim()}`;
         }
     }
-    console.warn('Could not find "PROJECT NAME:" or similar in the PDF');
+    console.warn('Could not find "PROJECT NAME:" in the PDF');
     return null;
 }
 
 function resetResults() {
     results = [];
-    const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    resultsTable.innerHTML = '';
+    const resultsTable = document.getElementById('resultsTable');
+    if (resultsTable) {
+        resultsTable.querySelector('tbody').innerHTML = '';
+    }
     document.getElementById('fileInput').value = '';
 }
