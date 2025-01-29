@@ -141,20 +141,15 @@ function updateToExcel() {
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        // Create an object to store the total cycle time for each project
+        // Create a new array for the updated rows
+        let newExcelRows = [];
+
+        // Calculate totals like before
         let cycleTimeSums = {};
-        let totalCycleTime = 0; // Variable to store the total cycle time for all PDFs
-        let subtotalSum = 0; // To store all subtotals
+        let totalCycleTime = 0;
+        let subtotalSum = 0;
 
-        // Process each result from the PDFs
         results.forEach(result => {
-            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
-
-            if (!matchIdentifier) {
-                console.error('Could not extract match identifier from PDF file name:', result.fileName);
-                return; // Skip this result if we can't find a match identifier
-            }
-
             const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
             const subtotalMatch = result.cycleTime.match(/\$\d+(?:\.\d{2})?/);
 
@@ -164,52 +159,55 @@ function updateToExcel() {
 
             totalCycleTime += cycleTimeInSeconds;
 
-            if (cycleTimeSums[matchIdentifier]) {
-                cycleTimeSums[matchIdentifier] += cycleTimeInSeconds;
+            // Here, we'll use the program name directly as the key instead of matching by file name
+            if (result.programName) {
+                if (cycleTimeSums[result.programName]) {
+                    cycleTimeSums[result.programName] += cycleTimeInSeconds;
+                } else {
+                    cycleTimeSums[result.programName] = cycleTimeInSeconds;
+                }
+            }
+        });
+
+        // Create a new structure where we match by program name
+        excelRows.forEach(row => {
+            let newRow = [...row]; // Create a copy of the row
+            const programName = row[1]?.toString().trim(); // Program Name in column B (index 1)
+
+            if (cycleTimeSums[programName]) {
+                // If there's a match, update the cycle time
+                newRow[3] = formatCycleTime(cycleTimeSums[programName]); // Total Cycle Time in column D (index 3)
             } else {
-                cycleTimeSums[matchIdentifier] = cycleTimeInSeconds;
+                // If no match, keep the original cycle time or set to empty if there was none
+                newRow[3] = row[3] || '';
             }
+
+            newExcelRows.push(newRow);
         });
 
-        // Now we go through the excelRows and match the project name with the 'Item No.' column
-        excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
-            
-            // Find corresponding result by file name
-            const result = results.find(r => r.fileName.includes(itemNo));
-            
-            if (result) {
-                // Update cycle time
-                row[3] = formatCycleTime(parseCycleTime(result.cycleTime)); // Assuming 'Total Cycle Time' is in column 4 (index 3)
-                // Add program name if you want to include it in the Excel sheet
-                row[1] = result.programName || ''; // Assuming you want program name in column 2 (index 1)
-            }
-        });
-
-        // Add a row at the end for the net total cycle time
-        excelRows.push([
-            'Net Total Cycle Time', // First column
-            '', // Leave second column empty
-            '', // Leave third column empty
-            formatCycleTime(totalCycleTime) // Total cycle time in the fourth column
+        // Add summary rows
+        newExcelRows.push([
+            'Net Total Cycle Time', 
+            '', 
+            '', 
+            formatCycleTime(totalCycleTime)
         ]);
-
-        // Add another row for the sum of subtotals
-        excelRows.push([
+        newExcelRows.push([
             'Sum of Subtotals', 
             '', 
             '', 
             `$${subtotalSum.toFixed(2)}`
         ]);
 
-        // Convert the updated data back to worksheet format
-        const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+        // Create a new worksheet with the updated data
+        const newWS = XLSX.utils.aoa_to_sheet(newExcelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
-        // Save the new workbook
-        XLSX.writeFile(newWB, 'updated_cycle_times.xlsx', {bookType:'xlsx', type: 'base64'});
+        // Save the new workbook with updated information
+        XLSX.writeFile(newWB, 'new_updated_cycle_times.xlsx', {bookType:'xlsx', type: 'base64'});
     };
+
     reader.onerror = function(error) {
         console.error("Error reading file:", error);
         alert('An error occurred while reading the file. Please try again.');
