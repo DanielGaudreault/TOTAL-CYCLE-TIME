@@ -1,18 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Event listener for "Process Files" button
     document.getElementById('processButton').addEventListener('click', processFiles);
-
-    // Event listener for "Reset Results" button
     document.getElementById('resetButton').addEventListener('click', resetResults);
-
-    // Event listener for "Upload to Excel" button
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
-let results = []; // Store results for all files
+let results = [];
 
-// Process selected files (PDFs or text)
-function processFiles() {
+async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
@@ -22,70 +16,57 @@ function processFiles() {
         return;
     }
 
-    // Clear previous results
     results = [];
     resultsTable.innerHTML = '';
     loading.style.display = 'block';
 
-    const files = Array.from(fileInput.files);
-
-    const promises = files.map(file => {
-        const reader = new FileReader();
-        return new Promise((resolve, reject) => {
-            reader.onload = async function (event) {
-                const content = event.target.result;
-                let cycleTime = null;
-
-                if (file.type === 'application/pdf') {
-                    // Handle PDF files
-                    const text = await parsePDF(content);
-                    cycleTime = extractCycleTime(text);
-                } else {
-                    // Handle text files
-                    cycleTime = extractCycleTime(content);
-                }
-
-                // Add result to the table
-                results.push({ fileName: file.name, cycleTime });
-                const row = resultsTable.insertRow();
-                row.insertCell().textContent = file.name;
-                row.insertCell().textContent = cycleTime || 'Not Found';
-
-                resolve(); // Signal that this file has been processed
-            };
-
-            reader.onerror = reject;
+    try {
+        const files = Array.from(fileInput.files);
+        for (const file of files) {
+            const content = await readFile(file);
+            let cycleTime = null;
 
             if (file.type === 'application/pdf') {
-                reader.readAsArrayBuffer(file); // Read PDF as ArrayBuffer
+                const text = await parsePDF(content);
+                cycleTime = extractCycleTime(text);
             } else {
-                reader.readAsText(file); // Read text files as text
+                cycleTime = extractCycleTime(content);
             }
-        });
-    });
 
-    Promise.all(promises).then(() => {
+            results.push({ fileName: file.name, cycleTime });
+            const row = resultsTable.insertRow();
+            row.insertCell().textContent = file.name;
+            row.insertCell().textContent = cycleTime || 'Not Found';
+        }
+    } catch (error) {
+        console.error("Error processing files:", error);
+        alert('An error occurred while processing the files. Please try again or check the console for details.');
+    } finally {
         loading.style.display = 'none';
-    }).catch(error => {
-        console.error("File processing failed:", error);
-        loading.style.display = 'none';
+    }
+}
+
+function readFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target.result);
+        reader.onerror = reject;
+        file.type === 'application/pdf' ? reader.readAsArrayBuffer(file) : reader.readAsText(file);
     });
 }
 
 function extractCycleTime(text) {
-    const lines = text.split('\n'); // Split text into lines
+    const lines = text.split('\n');
     for (const line of lines) {
         if (line.includes("TOTAL CYCLE TIME")) {
-            // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
             const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
             const match = line.match(regex);
-            return match ? match[0] : null; // Return the matched time or null
+            return match ? match[0] : null;
         }
     }
-    return null; // Return null if no match is found
+    return null;
 }
 
-// Parse PDF content using pdf.js
 function parsePDF(data) {
     return new Promise((resolve, reject) => {
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -103,7 +84,7 @@ function parsePDF(data) {
                         textContent.items.forEach(item => {
                             pageText += item.str + ' ';
                         });
-                        text += pageText + '\n'; // Add newline after each page
+                        text += pageText + '\n';
                     });
                 });
             };
@@ -120,7 +101,6 @@ function parsePDF(data) {
     });
 }
 
-// Reset the results
 function resetResults() {
     results = [];
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
@@ -129,7 +109,6 @@ function resetResults() {
     document.getElementById('uploadExcelInput').value = '';
 }
 
-// Update Excel with the summed cycle times and the net total cycle time
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
@@ -144,65 +123,48 @@ function updateToExcel() {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
 
-        // Assuming data is in the first sheet
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        // Create an object to store the total cycle time for each project
         let cycleTimeSums = {};
-        let totalCycleTime = 0; // Variable to store the total cycle time for all PDFs
+        let totalCycleTime = 0;
 
-        // Process each result from the PDFs
         results.forEach(result => {
-            // Extract the project name from the PDF filename, assuming it's something like "Project Name - Identifier"
-            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim(); // Adjusting regex
-
+            const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
             if (!matchIdentifier) {
                 console.error('Could not extract match identifier from PDF file name:', result.fileName);
-                return; // Skip this result if we can't find a match identifier
+                return;
             }
 
-            // If the project already exists in the cycleTimeSums map, add the cycle time, otherwise set it
             const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-            totalCycleTime += cycleTimeInSeconds; // Accumulate the total cycle time
+            totalCycleTime += cycleTimeInSeconds;
 
-            if (cycleTimeSums[matchIdentifier]) {
-                cycleTimeSums[matchIdentifier] += cycleTimeInSeconds;
-            } else {
-                cycleTimeSums[matchIdentifier] = cycleTimeInSeconds;
-            }
+            cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
         });
 
-        // Now we go through the excelRows and match the project name (from the cycleTimeSums) with the 'Item No.' column
         excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is in the first column
+            const itemNo = row[0]?.toString().trim();
             if (cycleTimeSums[itemNo]) {
-                // Match found, update the cycle time sum in the 'Total Cycle Time' column (assuming column D is where it goes)
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming 'Total Cycle Time' is in column 4 (index 3)
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]);
             }
         });
 
-        // Add a row at the end for the net total cycle time
         excelRows.push([
-            'Net Total Cycle Time', // First column
-            '', // Leave second column empty
-            '', // Leave third column empty
-            formatCycleTime(totalCycleTime) // Total cycle time in the fourth column
+            'Net Total Cycle Time',
+            '',
+            '',
+            formatCycleTime(totalCycleTime)
         ]);
 
-        // Convert the updated data back to worksheet format
         const newWS = XLSX.utils.aoa_to_sheet(excelRows);
         const newWB = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-
-        // Save the new workbook
         XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
     };
     reader.readAsArrayBuffer(file);
 }
 
-// Helper function to parse cycle time (e.g., "1 HOURS, 30 MINUTES, 0 SECONDS" -> total seconds)
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
@@ -217,7 +179,6 @@ function parseCycleTime(cycleTimeString) {
     return (hours * 3600) + (minutes * 60) + seconds;
 }
 
-// Helper function to format cycle time back to a readable string (seconds -> "X HOURS, Y MINUTES, Z SECONDS")
 function formatCycleTime(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
