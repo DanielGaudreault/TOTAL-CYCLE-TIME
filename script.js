@@ -34,6 +34,7 @@ async function processFiles() {
         for (const file of files) {
             const reader = new FileReader();
             reader.onload = async (event) => {
+                console.log("Processing file:", file.name);
                 const content = event.target.result;
                 let cycleTime = null;
                 let programName = null;
@@ -62,6 +63,7 @@ async function processFiles() {
             }
         }
         loading.textContent = 'Files processed!';
+        console.log("Processed Results:", results); // Log results for debugging
     } catch (error) {
         console.error("File processing failed:", error);
         alert('An error occurred while processing the files. Please try again.');
@@ -71,6 +73,7 @@ async function processFiles() {
 }
 
 function extractCycleTimeAndProgram(text) {
+    console.log("Extracting cycle time and program name from text...");
     const lines = text.split('\n');
     let cycleTime = null;
     let programName = null;
@@ -100,6 +103,7 @@ function extractCycleTimeAndProgram(text) {
 
 // Parse PDF content using pdf.js
 async function parsePDF(data) {
+    console.log("Parsing PDF content...");
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -111,11 +115,13 @@ async function parsePDF(data) {
         const textContent = await page.getTextContent();
         text += textContent.items.map(item => item.str).join(' ') + '\n';
     }
+    console.log("PDF text extracted:", text);
     return text;
 }
 
 // Reset the results
 function resetResults() {
+    console.log("Resetting results...");
     results = [];
     const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
     resultsTable.innerHTML = '';
@@ -132,12 +138,14 @@ function updateToExcel() {
     console.log("File selected:", file ? file.name : "No file selected");
 
     if (!file) {
+        console.error('No file selected for update');
         alert('Please select an Excel file to update.');
         return;
     }
 
     const reader = new FileReader();
     reader.onload = function(e) {
+        console.log("Reading Excel file...");
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
 
@@ -145,6 +153,8 @@ function updateToExcel() {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+        console.log("Original Excel Rows:", excelRows);
 
         // Create a new array for the updated rows
         let newExcelRows = [];
@@ -212,6 +222,7 @@ function updateToExcel() {
         XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
         // Save the new workbook with updated information
+        console.log("Attempting to save new Excel file...");
         XLSX.writeFile(newWB, 'new_updated_cycle_times.xlsx', {bookType:'xlsx', type: 'base64'});
     };
 
