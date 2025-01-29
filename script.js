@@ -128,10 +128,10 @@ function extractProjectNameLine(text) {
 function extractCycleTime(text) {
     const lines = text.split('\n');
     for (const line of lines) {
-        const regex = /TOTAL CYCLE TIME:\s*(\d+\s*HOURS?,\s*\d+\s*MINUTES?,\s*\d+\s*SECONDS?)/i;
+        const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
         const match = line.match(regex);
-        if (match && match[1]) {
-            return match[1].trim();
+        if (match && match[1] && match[2] && match[3]) {
+            return `${match[1]}h ${match[2]}m ${match[3]}s`;
         }
     }
     console.warn('Could not find "TOTAL CYCLE TIME" in the PDF');
@@ -228,15 +228,15 @@ function updateToExcel() {
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
-    const regex = /(\d+)\s*HOURS?/, hoursMatch = cycleTimeString.match(regex);
-    const regexMinutes = /(\d+)\s*MINUTES?/, minutesMatch = cycleTimeString.match(regexMinutes);
-    const regexSeconds = /(\d+)\s*SECONDS?/, secondsMatch = cycleTimeString.match(regexSeconds);
+    const regex = /(\d+)h\s*(\d+)m\s*(\d+)s/, match = cycleTimeString.match(regex);
 
-    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
-    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-    const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
-
-    return (hours * 3600) + (minutes * 60) + seconds;
+    if (match) {
+        const hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const seconds = parseInt(match[3]);
+        return (hours * 3600) + (minutes * 60) + seconds;
+    }
+    return 0; // If format doesn't match, return 0
 }
 
 function formatCycleTime(totalSeconds) {
@@ -244,5 +244,5 @@ function formatCycleTime(totalSeconds) {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    return `${hours} HOURS, ${minutes} MINUTES, ${seconds} SECONDS`;
+    return `${hours}h ${minutes}m ${seconds}s`;
 }
