@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
-let results = [];
+let results = []; // Store results for all files
 
 async function processFiles() {
     const fileInput = document.getElementById('fileInput');
@@ -34,10 +34,10 @@ async function processFiles() {
                 const text = await parsePDF(content);
                 console.log('Full PDF Text:', text); // Log the entire text for debugging
                 const projectNameLine = extractProjectNameLine(text);
-                const cycleTimeLine = extractCycleTimeLine(text);
-                console.log('Extracted Cycle Time Line:', cycleTimeLine);
-                if (projectNameLine || cycleTimeLine) {
-                    results.push({ fileName: file.name, projectNameLine, cycleTimeLine });
+                const cycleTime = extractCycleTime(text); // Changed to use new extractCycleTime
+                console.log('Extracted Cycle Time:', cycleTime);
+                if (projectNameLine || cycleTime) {
+                    results.push({ fileName: file.name, projectNameLine, cycleTime });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
@@ -45,10 +45,10 @@ async function processFiles() {
                     const cell3 = row.insertCell(2);
                     cell1.textContent = file.name;
                     cell2.textContent = projectNameLine || 'Not Found';
-                    cell3.textContent = cycleTimeLine ? extractCycleTimeOnly(cycleTimeLine) : 'Not Found'; // Changed here
+                    cell3.textContent = cycleTime || 'Not Found';
                 } else {
-                    console.log('Project name or cycle time line not found for file:', file.name);
-                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTimeLine: 'Not Found' });
+                    console.log('Project name or cycle time not found for file:', file.name);
+                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTime: 'Not Found' });
 
                     const row = tbody.insertRow();
                     const cell1 = row.insertCell(0);
@@ -125,22 +125,18 @@ function extractProjectNameLine(text) {
     return null;
 }
 
-function extractCycleTimeLine(text) {
-    const lines = text.split('\n');
+// New function from the provided code for extracting cycle time
+function extractCycleTime(text) {
+    const lines = text.split('\n'); // Split text into lines
     for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME:")) {
-            return line.trim();
+        if (line.includes("TOTAL CYCLE TIME")) {
+            // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
+            const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
+            const match = line.match(regex);
+            return match ? match[1] : null; // Return just the time part or null
         }
     }
-    console.warn('Could not find "TOTAL CYCLE TIME:" in the PDF');
-    return null;
-}
-
-// New function to extract only the time part from the cycle time line
-function extractCycleTimeOnly(cycleTimeLine) {
-    const regex = /(\d+ HOURS?, \d+ MINUTES?, \d+ SECONDS?)/i;
-    const match = cycleTimeLine.match(regex);
-    return match ? match[1] : 'Not Found';
+    return null; // Return null if no match is found
 }
 
 function resetResults() {
@@ -181,7 +177,7 @@ function updateToExcel() {
                 return;
             }
 
-            const cycleTimeInSeconds = parseCycleTime(result.cycleTimeLine);
+            const cycleTimeInSeconds = parseCycleTime(result.cycleTime); // Changed to use new parseCycleTime
             if (!isNaN(cycleTimeInSeconds)) {
                 totalCycleTime += cycleTimeInSeconds;
                 cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
@@ -230,19 +226,19 @@ function updateToExcel() {
     reader.readAsArrayBuffer(file);
 }
 
+// New helper functions from the provided code
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
-    const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
-    const match = cycleTimeString.match(regex);
+    const regex = /(\d+)\s*HOURS?/, hoursMatch = cycleTimeString.match(regex);
+    const regexMinutes = /(\d+)\s*MINUTES?/, minutesMatch = cycleTimeString.match(regexMinutes);
+    const regexSeconds = /(\d+)\s*SECONDS?/, secondsMatch = cycleTimeString.match(regexSeconds);
 
-    if (match && match[1] && match[2] && match[3]) {
-        const hours = parseInt(match[1]);
-        const minutes = parseInt(match[2]);
-        const seconds = parseInt(match[3]);
-        return (hours * 3600) + (minutes * 60) + seconds;
-    }
-    return 0; // If format doesn't match, return 0
+    const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+    const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+
+    return (hours * 3600) + (minutes * 60) + seconds;
 }
 
 function formatCycleTime(totalSeconds) {
