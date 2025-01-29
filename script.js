@@ -47,7 +47,7 @@ async function processFiles() {
                     ({ cycleTime, programName } = extractCycleTimeAndProgram(content));
                 }
 
-                // Add result to the table, now including program name
+                // Add result to the table and results array
                 results.push({ fileName: file.name, cycleTime, programName });
                 const row = resultsTable.insertRow();
                 row.insertCell().textContent = file.name;
@@ -157,7 +157,7 @@ function updateToExcel() {
         results.forEach(result => {
             if (result.programName) {
                 // Parse cycle time for each result
-                let cycleTimeInSeconds = parseCycleTime(result.cycleTime) || 0; // Ensure we have a number
+                let cycleTimeInSeconds = parseCycleTime(result.cycleTime) || 0; 
                 totalCycleTime += cycleTimeInSeconds;
 
                 // Handle subtotals
@@ -171,6 +171,8 @@ function updateToExcel() {
             }
         });
 
+        console.log("Cycle Time Sums:", cycleTimeSums);
+
         // Update rows with new data
         excelRows.forEach(row => {
             let newRow = [...row]; // Create a copy of the row
@@ -178,7 +180,9 @@ function updateToExcel() {
 
             if (cycleTimeSums[programName]) {
                 newRow[3] = formatCycleTime(cycleTimeSums[programName]); // Total Cycle Time in column D (index 3)
+                console.log(`Updating row for ${programName} with new time: ${newRow[3]}`);
             } else {
+                console.log(`No update for program ${programName} as it wasn't found in PDF results.`);
                 // Keep original or set to empty string if there was no previous value
                 newRow[3] = row[3] || '';
             }
@@ -199,6 +203,8 @@ function updateToExcel() {
             '', 
             `$${subtotalSum.toFixed(2)}`
         ]);
+
+        console.log("New Excel Rows:", newExcelRows);
 
         // Create a new worksheet with the updated data
         const newWS = XLSX.utils.aoa_to_sheet(newExcelRows);
