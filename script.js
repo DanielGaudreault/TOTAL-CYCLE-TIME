@@ -130,6 +130,7 @@ function updateToExcel() {
         let cycleTimeSums = {};
         let totalCycleTime = 0;
 
+        // Sum up cycle times for each project
         results.forEach(result => {
             const matchIdentifier = result.fileName.match(/^(.+?) - \d+/)?.[1].trim();
             if (!matchIdentifier) {
@@ -138,18 +139,23 @@ function updateToExcel() {
             }
 
             const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-            totalCycleTime += cycleTimeInSeconds;
-
-            cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
-        });
-
-        excelRows.forEach((row, rowIndex) => {
-            const itemNo = row[0]?.toString().trim(); // Assuming 'Item No.' is the first column
-            if (cycleTimeSums[itemNo]) {
-                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Assuming column D (index 3) for cycle time
+            if (!isNaN(cycleTimeInSeconds)) {
+                totalCycleTime += cycleTimeInSeconds;
+                cycleTimeSums[matchIdentifier] = (cycleTimeSums[matchIdentifier] || 0) + cycleTimeInSeconds;
+            } else {
+                console.error('Could not parse cycle time for:', result.fileName);
             }
         });
 
+        // Update or add subtotals to the Excel sheet
+        excelRows.forEach((row, rowIndex) => {
+            const itemNo = row[0]?.toString().trim(); // 'Item No.' in first column
+            if (cycleTimeSums[itemNo]) {
+                row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D
+            }
+        });
+
+        // Add a new row for the net total cycle time at the end
         excelRows.push([
             'Net Total Cycle Time', 
             '', 
