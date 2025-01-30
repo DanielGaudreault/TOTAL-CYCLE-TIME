@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Event listeners setting up...');
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+    console.log('Event listeners attached.');
 });
 
 let results = []; // Store results for all files
@@ -152,6 +154,7 @@ function resetResults() {
 
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
+    console.log('Files selected:', fileInput.files.length);
     const file = fileInput.files[0];
 
     if (!file) {
@@ -166,8 +169,8 @@ function updateToExcel() {
         console.log('File read completed');
         try {
             const data = new Uint8Array(e.target.result);
+            console.log('Data array:', data.slice(0, 10)); // Log first few bytes for debugging
             const workbook = XLSX.read(data, {type: 'array'});
-
             console.log('Workbook parsed:', workbook);
 
             const sheetName = workbook.SheetNames[0];
@@ -246,7 +249,11 @@ function updateToExcel() {
             }
         } catch (readError) {
             console.error('Error reading or parsing Excel file:', readError);
-            alert('Failed to read or parse the Excel file. Please check if it\'s a valid Excel document.');
+            if (readError.message.includes("Invalid sheet name")) {
+                alert('The Excel file might be corrupted or in an unsupported format.');
+            } else {
+                alert('An error occurred while reading or parsing the Excel file: ' + readError.message);
+            }
         }
     };
 
@@ -257,6 +264,7 @@ function updateToExcel() {
 
     reader.readAsArrayBuffer(file);
 }
+
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
