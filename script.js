@@ -69,99 +69,108 @@ const numPages = pdf.numPages;
 const fetchPage = (pageNum) => {
 return pdf.getPage(pageNum).then(page => {
 return page.getTextContent().then(textContent => {
-                        let pageText
-                        let pageText = '';
-                        textContent.items.forEach(item => {
-                            pageText += item.str + ' ';
-                        });
-                        text += pageText + '\n';
-                    });
-                });
-            };
+let pageText = '';
+textContent.items.forEach(item => {
+pageText += item.str + ' ';
+});
+text += pageText + '\n';
+});
+});
+};
 
-            const fetchAllPages = async () => {
-                for (let i = 1; i <= numPages; i++) {
-                    await fetchPage(i);
-                }
-                resolve(text);
-            };
+const fetchAllPages = async () => {
+for (let i = 1; i <= numPages; i++) {
+await fetchPage(i);
+}
+resolve(text);
+};
 
-            fetchAllPages();
-        }).catch(reject);
-    });
+fetchAllPages();
+}).catch(reject);
+});
 }
 
 function extractProjectNameLine(text) {
-    const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
-    const lines = text.split('\n');
-    for (let line of lines) {
-        const match = line.match(regex);
-        if (match && match[1].trim()) {
-            return `PROJECT NAME: ${match[1].trim()}`;
-        }
-    }
-    return null;
+const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
+const lines = text.split('\n');
+for (let line of lines) {
+const match = line.match(regex);
+if (match && match[1].trim()) {
+return `PROJECT NAME: ${match[1].trim()}`;
+}
+}
+return null;
 }
 
 function extractCycleTime(text) {
-    const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
-    const lines = text.split('\n');
-    for (const line of lines) {
-        const match = line.match(regex);
-        if (match) {
-            return `${match[1]}h ${match[2]}m ${match[3]}s`;
-        }
-    }
-    return null;
+const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
+const lines = text.split('\n');
+for (const line of lines) {
+const match = line.match(regex);
+if (match) {
+return `${match[1]}h ${match[2]}m ${match[3]}s`;
+}
+}
+return null;
 }
 
 function resetResults() {
-    results = [];
-    const resultsTable = document.getElementById('resultsTable');
-    if (resultsTable) {
-        resultsTable.querySelector('tbody').innerHTML = '';
-    }
-    document.getElementById('fileInput').value = '';
-    document.getElementById('uploadExcelInput').value = '';
+results = [];
+const resultsTable = document.getElementById('resultsTable');
+if (resultsTable) {
+resultsTable.querySelector('tbody').innerHTML = '';
+}
+document.getElementById('fileInput').value = '';
+document.getElementById('uploadExcelInput').value = '';
 }
 
 function updateToExcel() {
-    const fileInput = document.getElementById('uploadExcelInput');
-    const file = fileInput.files[0];
+const fileInput = document.getElementById('uploadExcelInput');
+const file = fileInput.files[0];
 
-    if (!file) {
-        alert('Please select an Excel file to update.');
-        return;
-    }
+if (!file) {
+alert('Please select an Excel file to update.');
+return;
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+const reader = new FileReader();
+reader.onload = function(e) {
+try {
+const data = new Uint8Array(e.target.result);
+const workbook = XLSX.read(data, {type: 'array'});
 
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+const sheetName = workbook.SheetNames[0];
+const worksheet = workbook.Sheets[sheetName];
+let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-            // Sum up cycle times for each project
-            let cycleTimeSums = {};
-            results.forEach(result => {
-                if (result.projectName in cycleTimeSums) {
-                    cycleTimeSums[result.projectName] = addCycleTimes(cycleTimeSums[result.projectName], result.cycleTime);
-                } else {
-                    cycleTimeSums[result.projectName] = result.cycleTime;
-                }
-            });
+console.log('Excel rows before update:', excelRows);
 
-            // Update existing rows in Excel, matching with column B for 'Item No.'
-            excelRows.forEach(row => {
-                const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
-                if (itemNo in cycleTimeSums) {
+// Sum up cycle times for each project
+let cycleTimeSums = {};
+results.forEach(result => {
+if (result.projectName in cycleTimeSums) {
+cycleTimeSums[result.projectName] = addCycleTimes(cycleTimeSums[result.projectName], result.cycleTime);
+} else {
+cycleTimeSums[result.projectName] = result.cycleTime;
+}
+});
+console.log('Cycle Time Sums:', cycleTimeSums);
+
+            // Log all project names for comparison
+            console.log('Project names from PDFs:', Object.keys(cycleTimeSums));
+
+// Update existing rows in Excel, matching with column B for 'Item No.'
+excelRows.forEach(row => {
+const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+if (itemNo in cycleTimeSums) {
                     row[3] = cycleTimeSums[itemNo]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${itemNo}: ${cycleTimeSums[itemNo]}`);
+                } else {
+                    console.log(`No match found for Item No.: ${itemNo}`);
                 }
             });
+
+            console.log('Excel rows after update:', excelRows);
 
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
@@ -182,3 +191,5 @@ function addCycleTimes(time1, time2) {
     const totalSeconds = (h1 + h2) * 3600 + (m1 + m2) * 60 + (s1 + s2);
     return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m ${totalSeconds % 60}s`;
 }
+                    // Explicitly set column D (index 3) to the summed cycle time
+                   
