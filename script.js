@@ -156,16 +156,17 @@ function updateToExcel() {
             });
             console.log('Cycle Time Sums:', cycleTimeSums);
 
-            // Update existing rows in Excel, matching with column B for 'Project Name'
-            excelRows.forEach(row => {
-                const projectName = row[1]?.toString().trim(); // 'Item No.' was in column B (index 1) but now we use 'Project Name'
+            // Update existing rows in Excel, matching with column A (index 0) for 'Project Name'
+            for (let i = 0; i < excelRows.length; i++) {
+                const row = excelRows[i];
+                const projectName = row[0]?.toString().trim(); // 'Project Name' is now assumed to be in column A (index 0)
                 if (projectName in cycleTimeSums) {
                     row[3] = cycleTimeSums[projectName]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${projectName}: ${cycleTimeSums[projectName]}`);
                 } else {
                     console.log(`No match found for Project Name: ${projectName}`);
                 }
-            });
+            }
 
             console.log('Excel rows after update:', excelRows);
 
