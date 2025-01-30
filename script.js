@@ -143,8 +143,6 @@ function updateToExcel() {
             const worksheet = workbook.Sheets[sheetName];
             let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-            console.log('Excel rows before update:', excelRows);
-
             // Sum up cycle times for each project
             let cycleTimeSums = {};
             results.forEach(result => {
@@ -154,14 +152,31 @@ function updateToExcel() {
                     cycleTimeSums[result.projectName] = result.cycleTime;
                 }
             });
-            console.log('Cycle Time Sums:', cycleTimeSums);
-
-            // Log all project names for comparison
-            console.log('Project names from PDFs:', Object.keys(cycleTimeSums));
 
             // Update existing rows in Excel, matching with column B for 'Item No.'
             excelRows.forEach(row => {
                 const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                 if (itemNo in cycleTimeSums) {
-                    // Explicitly set column D (index 3) to the summed cycle time
-                   
+                    row[3] = cycleTimeSums[itemNo]; // Update cycle time in column D (index 3)
+                }
+            });
+
+            const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+            const newWB = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+            XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+            alert('Excel sheet has been updated with new cycle times.');
+        } catch (error) {
+            console.error('Error updating Excel:', error);
+            alert('An error occurred while updating the Excel file. Check console for details.');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function addCycleTimes(time1, time2) {
+    const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
+    const [h2, m2, s2] = time2.split('h ')[0].split('m ')[0].split('s').map(Number);
+    const totalSeconds = (h1 + h2) * 3600 + (m1 + m2) * 60 + (s1 + s2);
+    return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m ${totalSeconds % 60}s`;
+}
