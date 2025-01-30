@@ -1,19 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Checking library loads...');
-    console.log('xlsx.js loaded:', typeof XLSX === 'object');
-    console.log('pdf.js loaded:', typeof pdfjsLib === 'object');
-    console.log('Event listeners setting up...');
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
-    document.getElementById('uploadExcelButton').addEventListener('click', function() {
-        console.log('Update to Excel button clicked');
-        updateToExcel();
-    });
-    console.log('Event listeners attached.');
-});
-
-window.addEventListener('error', function (e) {
-    console.error('Global error:', e.error, 'at line:', e.lineno);
+    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
 let results = []; // Store results for all files
@@ -22,12 +10,7 @@ async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable');
-    const tbody = resultsTable ? resultsTable.querySelector('tbody') : null;
-
-    if (!fileInput || !loading || !resultsTable || !tbody) {
-        console.error('Required elements not found in the DOM');
-        return;
-    }
+    const tbody = resultsTable.querySelector('tbody');
 
     if (fileInput.files.length === 0) {
         alert('Please select at least one file.');
@@ -44,31 +27,14 @@ async function processFiles() {
             if (file.type === 'application/pdf') {
                 const content = await readFile(file);
                 const text = await parsePDF(content);
-                console.log('Full PDF Text:', text); // Log the entire text for debugging
-                const projectNameLine = extractProjectNameLine(text);
+                const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
-                console.log('Extracted Cycle Time:', cycleTime);
-                if (projectNameLine || cycleTime) {
-                    results.push({ fileName: file.name, projectNameLine, cycleTime });
-
+                if (projectName && cycleTime) {
+                    results.push({ projectName: projectName.split(':')[1].trim(), cycleTime });
                     const row = tbody.insertRow();
-                    const cell1 = row.insertCell(0);
-                    const cell2 = row.insertCell(1);
-                    const cell3 = row.insertCell(2);
-                    cell1.textContent = file.name;
-                    cell2.textContent = projectNameLine || 'Not Found';
-                    cell3.textContent = cycleTime || 'Not Found';
-                } else {
-                    console.log('Project name or cycle time not found for file:', file.name);
-                    results.push({ fileName: file.name, projectNameLine: 'Not Found', cycleTime: 'Not Found' });
-
-                    const row = tbody.insertRow();
-                    const cell1 = row.insertCell(0);
-                    const cell2 = row.insertCell(1);
-                    const cell3 = row.insertCell(2);
-                    cell1.textContent = file.name;
-                    cell2.textContent = 'Not Found';
-                    cell3.textContent = 'Not Found';
+                    row.insertCell().textContent = file.name;
+                    row.insertCell().textContent = projectName;
+                    row.insertCell().textContent = cycleTime;
                 }
             }
         }
@@ -77,7 +43,6 @@ async function processFiles() {
         alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
-        console.log("Processed results:", results);
     }
 }
 
@@ -99,7 +64,7 @@ function parsePDF(data) {
         loadingTask.promise.then(pdf => {
             let text = '';
             const numPages = pdf.numPages;
-
+            
             const fetchPage = (pageNum) => {
                 return pdf.getPage(pageNum).then(page => {
                     return page.getTextContent().then(textContent => {
@@ -133,23 +98,19 @@ function extractProjectNameLine(text) {
             return `PROJECT NAME: ${match[1].trim()}`;
         }
     }
-    console.warn('Could not find "PROJECT NAME:" in the PDF');
     return null;
 }
 
 function extractCycleTime(text) {
-    const lines = text.split('\n'); // Split text into lines
+    const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
+    const lines = text.split('\n');
     for (const line of lines) {
-        if (line.includes("TOTAL CYCLE TIME")) {
-            // Use regex to extract the time part (e.g., "0 HOURS, 4 MINUTES, 16 SECONDS")
-            const regex = /(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
-            const match = line.match(regex);
-            if (match) {
-                return `${match[1]}h ${match[2]}m ${match[3]}s`;
-            }
+        const match = line.match(regex);
+        if (match) {
+            return `${match[1]}h ${match[2]}m ${match[3]}s`;
         }
     }
-    return null; // Return null if no match is found
+    return null;
 }
 
 function resetResults() {
@@ -164,161 +125,44 @@ function resetResults() {
 
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
-    console.log('Files selected:', fileInput.files.length);
-    if (fileInput.files.length === 0) {
-        alert('No file selected. Please choose an Excel file.');
-        return;
-    }
     const file = fileInput.files[0];
 
-    console.log('File selected:', file.name, file.type);
+    if (!file) {
+        alert('Please select an Excel file to update.');
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        console.log('File read completed');
         try {
-            console.log('Attempting to read file data:', e.target.result.slice(0, 10)); // Log first few bytes
             const data = new Uint8Array(e.target.result);
-            // Check for Excel file signature
-            if (!isExcelFile(data)) {
-                throw new Error('File does not appear to be an Excel file. Expected .xlsx or .xls format.');
-            }
-            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-            console.log('Workbook parsed:', workbook);
+            const workbook = XLSX.read(data, {type: 'array'});
 
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-            console.log('Original Excel Rows:', excelRows);
-
-            if (excelRows.length === 0) {
-                throw new Error('Excel file seems to be empty or not formatted correctly.');
-            }
-
-            let cycleTimeSums = {};
-            let totalCycleTime = 0;
-
+            // Update existing rows in Excel, matching with column B for 'Item No.'
             results.forEach(result => {
-                const projectName = result.projectNameLine ? result.projectNameLine.split(':')[1].trim() : null;
-                if (!projectName) {
-                    console.warn('Could not determine project name from:', result.fileName);
-                    return;
-                }
-
-                const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
-                if (!isNaN(cycleTimeInSeconds)) {
-                    totalCycleTime += cycleTimeInSeconds;
-                    cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
-                } else {
-                    console.error('Could not parse cycle time for:', result.fileName);
+                for (let row of excelRows) {
+                    const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                    if (itemNo === result.projectName) {
+                        row[3] = result.cycleTime; // Update cycle time in column D (index 3)
+                        console.log(`Updated cycle time for ${itemNo}: ${result.cycleTime}`);
+                        break; // Only update the first match
+                    }
                 }
             });
-
-            console.log("CycleTimeSums:", cycleTimeSums);
-
-            // Handle undefined values when reading 'Item No.' from Excel 
-            excelRows.forEach((row, rowIndex) => {
-                const itemNo = row[1] != null ? row[1].toString().trim() : 'Unknown';
-                if (cycleTimeSums[itemNo]) {
-                    row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
-                    console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
-                } else {
-                    console.log(`No match found for Item No.: ${itemNo}`);
-                }
-            });
-
-            // Add summary rows
-            Object.keys(cycleTimeSums).forEach(project => {
-                excelRows.push([
-                    '', // Empty for column A
-                    `Subtotal for ${project}`, // Column B for 'Item No.'
-                    '', 
-                    formatCycleTime(cycleTimeSums[project])
-                ]);
-            });
-
-            // Add total cycle time at the end
-            excelRows.push([
-                '', // Empty for column A
-                'Net Total Cycle Time', // Column B for 'Item No.'
-                '', 
-                formatCycleTime(totalCycleTime)
-            ]);
-
-            console.log("Updated Excel Rows:", excelRows);
 
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-            
-            console.log('Attempting to save new Excel file');
-            try {
-                XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-                console.log('Excel sheet updated and saved.');
-                alert('Excel file has been updated and saved as "updated_cycle_times.xlsx".');
-            } catch (saveError) {
-                console.error('Error saving Excel file:', saveError);
-                alert('An error occurred while saving the Excel file. Check console for details.');
-            }
-        } catch (readError) {
-            console.error('Error reading or parsing Excel file:', readError);
-            console.log('Error stack:', readError.stack);
-            console.log('Error name:', readError.name);
-            console.log('Error message:', readError.message);
-
-            let errorMessage = 'An error occurred while reading or parsing the Excel file: ';
-
-            if (readError.message.includes('file does not appear to be an Excel')) {
-                errorMessage += 'It seems the file might not be an Excel file or is in an unsupported format.';
-            } else if (readError.message.includes('Invalid sheet name')) {
-                errorMessage += 'The Excel file might be corrupted or in an unsupported format.';
-            } else {
-                errorMessage += readError.message;
-            }
-
-            alert(errorMessage);
+            XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
+            alert('Excel sheet has been updated with new cycle times.');
+        } catch (error) {
+            console.error('Error updating Excel:', error);
+            alert('An error occurred while updating the Excel file. Check console for details.');
         }
     };
-
-    reader.onerror = function(error) {
-        console.error('Error reading file:', error);
-        alert('There was an error reading the file. Please try again with a different file.');
-    };
-
     reader.readAsArrayBuffer(file);
-}
-
-function isExcelFile(data) {
-    // Check for .xlsx file signature (PK Zip file)
-    if (data[0] === 0x50 && data[1] === 0x4b) {
-        return true;
-    }
-    // Check for .xls file signature
-    if (data[0] === 0xD0 && data[1] === 0xCF && data[2] === 0x11 && data[3] === 0xE0 && data[4] === 0xA1 && data[5] === 0xB1 && data[6] === 0x1A && data[7] === 0xE1) {
-        return true;
-    }
-    return false;
-}
-
-function parseCycleTime(cycleTimeString) {
-    if (!cycleTimeString) return 0;
-
-    const regex = /(\d+)h\s*(\d+)m\s*(\d+)s/;
-    const match = cycleTimeString.match(regex);
-    if (match) {
-        const hours = parseInt(match[1]);
-        const minutes = parseInt(match[2]);
-        const seconds = parseInt(match[3]);
-        return (hours * 3600) + (minutes * 60) + seconds;
-    }
-    return 0; // If format doesn't match, return 0
-}
-
-function formatCycleTime(totalSeconds) {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${hours}h ${minutes}m ${seconds}s`;
 }
