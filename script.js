@@ -159,28 +159,8 @@ function updateToExcel() {
                 if (itemNo in cycleTimeSums) {
                     row[3] = cycleTimeSums[itemNo]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${itemNo}: ${cycleTimeSums[itemNo]}`);
-                    delete cycleTimeSums[itemNo]; // Remove from sums after updating to prevent duplicates
                 }
             });
-
-            // Add any remaining cycle times that didn't match existing rows
-            Object.keys(cycleTimeSums).forEach(project => {
-                excelRows.push([
-                    '', // Empty for column A
-                    project, // Project name in column B (index 1)
-                    '', 
-                    cycleTimeSums[project] // Cycle time in column D (index 3)
-                ]);
-            });
-
-            // Calculate and add the net total cycle time
-            const totalCycleTime = calculateTotalCycleTime(Object.values(cycleTimeSums));
-            excelRows.push([
-                '', // Empty for column A
-                'Net Total Cycle Time', // Column B for 'Item No.'
-                '', 
-                totalCycleTime // Total cycle time in column D (index 3)
-            ]);
 
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
@@ -200,8 +180,4 @@ function addCycleTimes(time1, time2) {
     const [h2, m2, s2] = time2.split('h ')[0].split('m ')[0].split('s').map(Number);
     const totalSeconds = (h1 + h2) * 3600 + (m1 + m2) * 60 + (s1 + s2);
     return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m ${totalSeconds % 60}s`;
-}
-
-function calculateTotalCycleTime(times) {
-    return times.reduce((total, time) => addCycleTimes(total, time), '0h 0m 0s');
 }
