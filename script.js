@@ -161,8 +161,10 @@ function updateToExcel() {
                 const row = excelRows[i];
                 const projectName = row[0]?.toString().trim(); // 'Project Name' is now assumed to be in column A (index 0)
                 if (projectName in cycleTimeSums) {
+                    // Log the update action
+                    console.log(`Updating cycle time for ${projectName} with ${cycleTimeSums[projectName]}`);
                     row[3] = cycleTimeSums[projectName]; // Update cycle time in column D (index 3)
-                    console.log(`Updated cycle time for ${projectName}: ${cycleTimeSums[projectName]}`);
+                    console.log(`Updated cycle time for ${projectName}:`, row);
                 } else {
                     console.log(`No match found for Project Name: ${projectName}`);
                 }
@@ -170,6 +172,7 @@ function updateToExcel() {
 
             console.log('Excel rows after update:', excelRows);
 
+            // Convert back to worksheet format
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
