@@ -144,13 +144,18 @@ function updateToExcel() {
 
             // Update existing rows in Excel, matching with column B for 'Item No.'
             results.forEach(result => {
+                let updated = false;
                 for (let row of excelRows) {
                     const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                     if (itemNo === result.projectName) {
                         row[3] = result.cycleTime; // Update cycle time in column D (index 3)
                         console.log(`Updated cycle time for ${itemNo}: ${result.cycleTime}`);
+                        updated = true;
                         break; // Only update the first match
                     }
+                }
+                if (!updated) {
+                    console.log(`No match found for project name: ${result.projectName}`);
                 }
             });
 
