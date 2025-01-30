@@ -158,6 +158,7 @@ function updateToExcel() {
                 const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                 if (itemNo in cycleTimeSums) {
                     row[3] = cycleTimeSums[itemNo]; // Update cycle time in column D (index 3)
+                    console.log(`Updated cycle time for ${itemNo}: ${cycleTimeSums[itemNo]}`);
                 }
             });
 
