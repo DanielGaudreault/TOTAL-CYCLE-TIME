@@ -213,8 +213,9 @@ function updateToExcel() {
 
             console.log("CycleTimeSums:", cycleTimeSums);
 
+            // Handle undefined values when reading 'Item No.' from Excel 
             excelRows.forEach((row, rowIndex) => {
-                const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                const itemNo = row[1] != null ? row[1].toString().trim() : 'Unknown';
                 if (cycleTimeSums[itemNo]) {
                     row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
