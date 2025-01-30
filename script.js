@@ -145,11 +145,11 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Normalize data for comparison (remove spaces, convert to lowercase)
+            // Normalize data for comparison (remove spaces, dashes, dots, convert to lowercase)
             let cycleTimeByItemNo = {};
             results.forEach(result => {
-                const normalizedProjectName = result.projectName.replace(/\s/g, '').toLowerCase();
-                console.log(`Adding normalized project name: ${normalizedProjectName} with cycle time: ${result.cycleTime}`);
+                let normalizedProjectName = result.projectName.replace(/[\s\-\.]/g, '').toLowerCase();
+                console.log(`Normalized project name from PDF: ${normalizedProjectName}, Original: ${result.projectName}`);
                 cycleTimeByItemNo[normalizedProjectName] = result.cycleTime;
             });
             console.log('Cycle Time by Normalized Item No:', cycleTimeByItemNo);
@@ -158,8 +158,8 @@ function updateToExcel() {
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
-                const normalizedItemNo = itemNo.replace(/\s/g, '').toLowerCase();
-                console.log(`Checking for match with normalized Item No: ${normalizedItemNo}`);
+                let normalizedItemNo = itemNo.replace(/[\s\-\.]/g, '').toLowerCase();
+                console.log(`Checking for match with normalized Item No from Excel: ${normalizedItemNo}, Original: ${itemNo}`);
 
                 if (normalizedItemNo in cycleTimeByItemNo) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${cycleTimeByItemNo[normalizedItemNo]}`);
