@@ -170,7 +170,7 @@ function updateToExcel() {
         try {
             const data = new Uint8Array(e.target.result);
             console.log('Data array:', data.slice(0, 10)); // Log first few bytes for debugging
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
             console.log('Workbook parsed:', workbook);
 
             const sheetName = workbook.SheetNames[0];
@@ -249,8 +249,9 @@ function updateToExcel() {
             }
         } catch (readError) {
             console.error('Error reading or parsing Excel file:', readError);
-            if (readError.message.includes("Invalid sheet name")) {
-                alert('The Excel file might be corrupted or in an unsupported format.');
+            console.log('Error stack:', readError.stack);
+            if (readError.message.includes("Invalid sheet name") || readError.message.includes("cannot read property")) {
+                alert('The Excel file might be corrupted, in an unsupported format, or contains invalid data. Error: ' + readError.message);
             } else {
                 alert('An error occurred while reading or parsing the Excel file: ' + readError.message);
             }
