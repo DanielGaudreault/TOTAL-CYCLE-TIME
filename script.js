@@ -143,6 +143,8 @@ function updateToExcel() {
             const worksheet = workbook.Sheets[sheetName];
             let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
+            console.log('Excel rows before update:', excelRows);
+
             // Sum up cycle times for each project
             let cycleTimeSums = {};
             results.forEach(result => {
@@ -152,6 +154,7 @@ function updateToExcel() {
                     cycleTimeSums[result.projectName] = result.cycleTime;
                 }
             });
+            console.log('Cycle Time Sums:', cycleTimeSums);
 
             // Update existing rows in Excel, matching with column B for 'Item No.'
             excelRows.forEach(row => {
@@ -163,6 +166,8 @@ function updateToExcel() {
                     console.log(`No match found for Item No.: ${itemNo}`);
                 }
             });
+
+            console.log('Excel rows after update:', excelRows);
 
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
