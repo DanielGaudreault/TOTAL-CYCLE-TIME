@@ -145,28 +145,25 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Sum up cycle times for each project
-            let cycleTimeSums = {};
+            // Create a map where the key is the 'item no' from Excel and the value is the cycle time from PDF results
+            let cycleTimeByItemNo = {};
             results.forEach(result => {
-                if (result.projectName in cycleTimeSums) {
-                    cycleTimeSums[result.projectName] = addCycleTimes(cycleTimeSums[result.projectName], result.cycleTime);
-                } else {
-                    cycleTimeSums[result.projectName] = result.cycleTime;
-                }
+                // Here we assume 'projectName' from PDF results corresponds to 'Item No.' in Excel
+                cycleTimeByItemNo[result.projectName] = result.cycleTime;
             });
-            console.log('Cycle Time Sums:', cycleTimeSums);
+            console.log('Cycle Time by Item No:', cycleTimeByItemNo);
 
-            // Update existing rows in Excel, matching with column A (index 0) for 'Project Name'
+            // Update existing rows in Excel, matching with column B for 'Item No.'
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                const projectName = row[0]?.toString().trim(); // 'Project Name' is now assumed to be in column A (index 0)
-                if (projectName in cycleTimeSums) {
-                    // Log the update action
-                    console.log(`Updating cycle time for ${projectName} with ${cycleTimeSums[projectName]}`);
-                    row[3] = cycleTimeSums[projectName]; // Update cycle time in column D (index 3)
-                    console.log(`Updated cycle time for ${projectName}:`, row);
+                const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+
+                if (itemNo in cycleTimeByItemNo) {
+                    console.log(`Updating cycle time for Item No: ${itemNo} with ${cycleTimeByItemNo[itemNo]}`);
+                    row[3] = cycleTimeByItemNo[itemNo]; // Update cycle time in column D (index 3)
+                    console.log(`Updated cycle time for Item No ${itemNo}:`, row);
                 } else {
-                    console.log(`No match found for Project Name: ${projectName}`);
+                    console.log(`No match found for Item No: ${itemNo}`);
                 }
             }
 
