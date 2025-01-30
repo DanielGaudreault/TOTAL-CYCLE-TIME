@@ -5,8 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Event listeners setting up...');
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
-    document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+    document.getElementById('uploadExcelButton').addEventListener('click', function() {
+        console.log('Update to Excel button clicked');
+        updateToExcel();
+    });
     console.log('Event listeners attached.');
+});
+
+window.addEventListener('error', function (e) {
+    console.error('Global error:', e.error, 'at line:', e.lineno);
 });
 
 let results = []; // Store results for all files
@@ -158,12 +165,11 @@ function resetResults() {
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     console.log('Files selected:', fileInput.files.length);
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert('Please select an Excel file to update.');
+    if (fileInput.files.length === 0) {
+        alert('No file selected. Please choose an Excel file.');
         return;
     }
+    const file = fileInput.files[0];
 
     console.log('File selected:', file.name, file.type);
 
