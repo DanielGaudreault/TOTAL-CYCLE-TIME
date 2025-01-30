@@ -69,43 +69,43 @@ const numPages = pdf.numPages;
 const fetchPage = (pageNum) => {
 return pdf.getPage(pageNum).then(page => {
 return page.getTextContent().then(textContent => {
-let pageText = '';
-textContent.items.forEach(item => {
-pageText += item.str + ' ';
-});
-text += pageText + '\n';
-});
-});
-};
+                        let pageText
+                        let pageText = '';
+                        textContent.items.forEach(item => {
+                            pageText += item.str + ' ';
+                        });
+                        text += pageText + '\n';
+                    });
+                });
+            };
 
-const fetchAllPages = async () => {
-for (let i = 1; i <= numPages; i++) {
-await fetchPage(i);
-}
-resolve(text);
-};
+            const fetchAllPages = async () => {
+                for (let i = 1; i <= numPages; i++) {
+                    await fetchPage(i);
+                }
+                resolve(text);
+            };
 
-fetchAllPages();
-}).catch(reject);
-});
+            fetchAllPages();
+        }).catch(reject);
+    });
 }
 
 function extractProjectNameLine(text) {
-const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
-const lines = text.split('\n');
-for (let line of lines) {
-const match = line.match(regex);
-if (match && match[1].trim()) {
-return `PROJECT NAME: ${match[1].trim()}`;
-}
-}
-return null;
+    const regex = /PROJECT NAME:\s*(.*?)\s*DATE:/i;
+    const lines = text.split('\n');
+    for (let line of lines) {
+        const match = line.match(regex);
+        if (match && match[1].trim()) {
+            return `PROJECT NAME: ${match[1].trim()}`;
+        }
+    }
+    return null;
 }
 
 function extractCycleTime(text) {
-const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
-const lines = text.split('\n');
-    for (const line of lines
+    const regex = /TOTAL CYCLE TIME:\s*(\d+)\s*HOURS?,\s*(\d+)\s*MINUTES?,\s*(\d+)\s*SECONDS?/i;
+    const lines = text.split('\n');
     for (const line of lines) {
         const match = line.match(regex);
         if (match) {
