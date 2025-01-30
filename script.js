@@ -176,8 +176,13 @@ function updateToExcel() {
 
             console.log('Original Excel Rows:', excelRows);
 
-            // Create a map of project names to cycle times
-            const cycleTimeMap = new Map();
+            if (excelRows.length === 0) {
+                throw new Error('Excel file seems to be empty or not formatted correctly.');
+            }
+
+            let cycleTimeSums = {};
+            let totalCycleTime = 0;
+
             results.forEach(result => {
                 const projectName = result.projectNameLine ? result.projectNameLine.split(':')[1].trim() : null;
                 if (!projectName) {
@@ -187,19 +192,19 @@ function updateToExcel() {
 
                 const cycleTimeInSeconds = parseCycleTime(result.cycleTime);
                 if (!isNaN(cycleTimeInSeconds)) {
-                    cycleTimeMap.set(projectName, cycleTimeInSeconds);
+                    totalCycleTime += cycleTimeInSeconds;
+                    cycleTimeSums[projectName] = (cycleTimeSums[projectName] || 0) + cycleTimeInSeconds;
                 } else {
                     console.error('Could not parse cycle time for:', result.fileName);
                 }
             });
 
-            console.log("CycleTimeMap:", cycleTimeMap);
+            console.log("CycleTimeSums:", cycleTimeSums);
 
-            // Update existing rows in Excel, adding cycle times to column D (index 3), matching with column B for 'Item No.'
             excelRows.forEach((row, rowIndex) => {
                 const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
-                if (cycleTimeMap.has(itemNo)) {
-                    row[3] = formatCycleTime(cycleTimeMap.get(itemNo)); // Update cycle time in column D (index 3)
+                if (cycleTimeSums[itemNo]) {
+                    row[3] = formatCycleTime(cycleTimeSums[itemNo]); // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${itemNo}: ${row[3]}`);
                 } else {
                     console.log(`No match found for Item No.: ${itemNo}`);
@@ -207,17 +212,16 @@ function updateToExcel() {
             });
 
             // Add summary rows
-            cycleTimeMap.forEach((cycleTime, project) => {
+            Object.keys(cycleTimeSums).forEach(project => {
                 excelRows.push([
                     '', // Empty for column A
                     `Subtotal for ${project}`, // Column B for 'Item No.'
                     '', 
-                    formatCycleTime(cycleTime)
+                    formatCycleTime(cycleTimeSums[project])
                 ]);
             });
 
             // Add total cycle time at the end
-            const totalCycleTime = Array.from(cycleTimeMap.values()).reduce((sum, time) => sum + time, 0);
             excelRows.push([
                 '', // Empty for column A
                 'Net Total Cycle Time', // Column B for 'Item No.'
@@ -243,16 +247,16 @@ function updateToExcel() {
         } catch (readError) {
             console.error('Error reading or parsing Excel file:', readError);
             alert('Failed to read or parse the Excel file. Please check if it\'s a valid Excel document.');
-            return;
         }
     };
+
     reader.onerror = function(error) {
         console.error('Error reading file:', error);
         alert('There was an error reading the file. Please try again with a different file.');
     };
+
     reader.readAsArrayBuffer(file);
 }
-
 function parseCycleTime(cycleTimeString) {
     if (!cycleTimeString) return 0;
 
