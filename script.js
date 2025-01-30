@@ -177,8 +177,12 @@ function updateToExcel() {
     reader.onload = function(e) {
         console.log('File read completed');
         try {
+            console.log('Attempting to read file data:', e.target.result.slice(0, 10)); // Log first few bytes
             const data = new Uint8Array(e.target.result);
-            console.log('Data array:', data.slice(0, 10)); // Log first few bytes for debugging
+            // Check for Excel file signature
+            if (!isExcelFile(data)) {
+                throw new Error('File does not appear to be an Excel file. Expected .xlsx or .xls format.');
+            }
             const workbook = XLSX.read(data, {type: 'array', cellDates: true});
             console.log('Workbook parsed:', workbook);
 
@@ -265,12 +269,10 @@ function updateToExcel() {
 
             let errorMessage = 'An error occurred while reading or parsing the Excel file: ';
 
-            if (readError.name === 'TypeError') {
+            if (readError.message.includes('file does not appear to be an Excel')) {
                 errorMessage += 'It seems the file might not be an Excel file or is in an unsupported format.';
             } else if (readError.message.includes('Invalid sheet name')) {
                 errorMessage += 'The Excel file might be corrupted or in an unsupported format.';
-            } else if (readError.message.includes('cannot read property')) {
-                errorMessage += 'There might be an issue with how the data is structured in the Excel file.';
             } else {
                 errorMessage += readError.message;
             }
@@ -285,6 +287,18 @@ function updateToExcel() {
     };
 
     reader.readAsArrayBuffer(file);
+}
+
+function isExcelFile(data) {
+    // Check for .xlsx file signature (PK Zip file)
+    if (data[0] === 0x50 && data[1] === 0x4b) {
+        return true;
+    }
+    // Check for .xls file signature
+    if (data[0] === 0xD0 && data[1] === 0xCF && data[2] === 0x11 && data[3] === 0xE0 && data[4] === 0xA1 && data[5] === 0xB1 && data[6] === 0x1A && data[7] === 0xE1) {
+        return true;
+    }
+    return false;
 }
 
 function parseCycleTime(cycleTimeString) {
