@@ -145,30 +145,31 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Create a map where the key is the 'item no' from Excel and the value is the cycle time from PDF results
+            // Normalize data for comparison (remove spaces, convert to lowercase)
             let cycleTimeByItemNo = {};
             results.forEach(result => {
-                // Here we assume 'projectName' from PDF results corresponds to 'Item No.' in Excel
-                // Adding a check to log what we're adding to the map
-                console.log(`Mapping PDF project name '${result.projectName}' to cycle time '${result.cycleTime}'`);
-                cycleTimeByItemNo[result.projectName] = result.cycleTime;
+                const normalizedProjectName = result.projectName.replace(/\s/g, '').toLowerCase();
+                console.log(`Adding normalized project name: ${normalizedProjectName} with cycle time: ${result.cycleTime}`);
+                cycleTimeByItemNo[normalizedProjectName] = result.cycleTime;
             });
-            console.log('Cycle Time by Item No:', cycleTimeByItemNo);
+            console.log('Cycle Time by Normalized Item No:', cycleTimeByItemNo);
 
             // Update existing rows in Excel, matching with column B for 'Item No.'
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                const itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                const normalizedItemNo = itemNo.replace(/\s/g, '').toLowerCase();
+                console.log(`Checking for match with normalized Item No: ${normalizedItemNo}`);
 
-                if (itemNo in cycleTimeByItemNo) {
-                    console.log(`Updating cycle time for Item No: ${itemNo} with ${cycleTimeByItemNo[itemNo]}`);
-                    row[3] = cycleTimeByItemNo[itemNo]; // Update cycle time in column D (index 3)
+                if (normalizedItemNo in cycleTimeByItemNo) {
+                    console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${cycleTimeByItemNo[normalizedItemNo]}`);
+                    row[3] = cycleTimeByItemNo[normalizedItemNo]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for Item No ${itemNo}:`, row);
                 } else {
                     console.log(`No match found for Item No: ${itemNo}. Checking for possible matches:`);
                     Object.keys(cycleTimeByItemNo).forEach(key => {
-                        if (key.toLowerCase().includes(itemNo.toLowerCase())) {
-                            console.log(`Possible match: ${key} for ${itemNo}`);
+                        if (key.includes(normalizedItemNo)) {
+                            console.log(`Possible match: ${key} for ${normalizedItemNo}`);
                         }
                     });
                 }
