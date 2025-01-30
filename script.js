@@ -159,6 +159,8 @@ function updateToExcel() {
                 if (itemNo in cycleTimeSums) {
                     row[3] = cycleTimeSums[itemNo]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for ${itemNo}: ${cycleTimeSums[itemNo]}`);
+                } else {
+                    console.log(`No match found for Item No.: ${itemNo}`);
                 }
             });
 
