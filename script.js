@@ -149,6 +149,8 @@ function updateToExcel() {
             let cycleTimeByItemNo = {};
             results.forEach(result => {
                 // Here we assume 'projectName' from PDF results corresponds to 'Item No.' in Excel
+                // Adding a check to log what we're adding to the map
+                console.log(`Mapping PDF project name '${result.projectName}' to cycle time '${result.cycleTime}'`);
                 cycleTimeByItemNo[result.projectName] = result.cycleTime;
             });
             console.log('Cycle Time by Item No:', cycleTimeByItemNo);
@@ -163,7 +165,12 @@ function updateToExcel() {
                     row[3] = cycleTimeByItemNo[itemNo]; // Update cycle time in column D (index 3)
                     console.log(`Updated cycle time for Item No ${itemNo}:`, row);
                 } else {
-                    console.log(`No match found for Item No: ${itemNo}`);
+                    console.log(`No match found for Item No: ${itemNo}. Checking for possible matches:`);
+                    Object.keys(cycleTimeByItemNo).forEach(key => {
+                        if (key.toLowerCase().includes(itemNo.toLowerCase())) {
+                            console.log(`Possible match: ${key} for ${itemNo}`);
+                        }
+                    });
                 }
             }
 
@@ -182,7 +189,6 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
-
 function addCycleTimes(time1, time2) {
     const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
     const [h2, m2, s2] = time2.split('h ')[0].split('m ')[0].split('s').map(Number);
