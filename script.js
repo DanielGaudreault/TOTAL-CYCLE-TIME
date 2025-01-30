@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Checking library loads...');
+    console.log('xlsx.js loaded:', typeof XLSX === 'object');
+    console.log('pdf.js loaded:', typeof pdfjsLib === 'object');
     console.log('Event listeners setting up...');
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
@@ -250,11 +253,22 @@ function updateToExcel() {
         } catch (readError) {
             console.error('Error reading or parsing Excel file:', readError);
             console.log('Error stack:', readError.stack);
-            if (readError.message.includes("Invalid sheet name") || readError.message.includes("cannot read property")) {
-                alert('The Excel file might be corrupted, in an unsupported format, or contains invalid data. Error: ' + readError.message);
+            console.log('Error name:', readError.name);
+            console.log('Error message:', readError.message);
+
+            let errorMessage = 'An error occurred while reading or parsing the Excel file: ';
+
+            if (readError.name === 'TypeError') {
+                errorMessage += 'It seems the file might not be an Excel file or is in an unsupported format.';
+            } else if (readError.message.includes('Invalid sheet name')) {
+                errorMessage += 'The Excel file might be corrupted or in an unsupported format.';
+            } else if (readError.message.includes('cannot read property')) {
+                errorMessage += 'There might be an issue with how the data is structured in the Excel file.';
             } else {
-                alert('An error occurred while reading or parsing the Excel file: ' + readError.message);
+                errorMessage += readError.message;
             }
+
+            alert(errorMessage);
         }
     };
 
