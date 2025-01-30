@@ -30,10 +30,11 @@ async function processFiles() {
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    results.push({ projectName: projectName.split(':')[1].trim(), cycleTime });
+                    const cleanProjectName = projectName.split(':')[1].trim();
+                    results.push({ projectName: cleanProjectName, cycleTime });
                     const row = tbody.insertRow();
                     row.insertCell().textContent = file.name;
-                    row.insertCell().textContent = projectName;
+                    row.insertCell().textContent = cleanProjectName; // Only display the project name without "PROJECT NAME: "
                     row.insertCell().textContent = cycleTime;
                 }
             }
