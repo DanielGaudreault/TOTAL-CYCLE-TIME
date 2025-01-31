@@ -124,7 +124,7 @@ function resetResults() {
     document.getElementById('uploadExcelInput').value = '';
 }
 
-function updateToExcelWithMatching() {
+function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
 
