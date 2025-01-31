@@ -133,59 +133,60 @@ function updateToExcel() {
         return;
     }
 
+    console.log('Excel file selected:', file.name);
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
-            // Read the file as an array buffer
+            // Read the Excel file
+            console.log('Reading Excel file...');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
 
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read raw data
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
             console.log('Excel rows before update:', excelRows);
-            console.log('Results to match (from PDFs):', results);
+            console.log('Results data (from PDFs):', results); // Check what we are comparing with
 
-            // Loop through each row in Excel
+            // Loop through each row in the Excel sheet
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                let itemNo = (row[1] || '').toString().trim();  // Assuming Item No. is in column B (index 1)
-
-                // Log the current Item No.
+                const itemNo = (row[1] || '').toString().trim(); // Assuming Item No is in column B (index 1)
                 console.log(`Processing row ${i + 1}: Item No. "${itemNo}"`);
 
-                // Normalize the Item No. (strip special characters, lowercased)
-                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                // Normalize Item No
+                const normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                console.log(`Normalized Item No: "${normalizedItemNo}"`);
+
                 let matchFound = false;
 
-                // Attempt to find a match in the PDF results
-                results.forEach(result => {
-                    let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize project name
-                    console.log(`Comparing Item No. "${normalizedItemNo}" with Project Name: "${normalizedProjectName}"`);
+                // Loop through the results array (PDFs data)
+                results.forEach((result) => {
+                    const normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    console.log(`Checking if "${normalizedItemNo}" matches with "${normalizedProjectName}"`);
 
-                    if (normalizedProjectName === normalizedItemNo) {
+                    if (normalizedItemNo === normalizedProjectName) {
                         console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
-                        row[3] = result.cycleTime; // Update the Excel row (Column D)
+                        row[3] = result.cycleTime; // Update Column D (index 3) with cycle time
                         matchFound = true;
                     }
                 });
 
-                // If no match was found, log that information
                 if (!matchFound) {
-                    console.log(`No match found for Item No: "${itemNo}"`);
+                    console.log(`No match found for Item No. "${itemNo}"`);
                 }
             }
 
-            // Log the rows after update for verification
             console.log('Excel rows after update:', excelRows);
 
-            // Create new Excel file with updated data
+            // Create the updated worksheet
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
-            // Generate the updated Excel file
+            // Generate the updated Excel file for download
             const wbout = XLSX.write(newWB, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
