@@ -181,6 +181,13 @@ function updateToExcel() {
                 }
             }
 
+            // After processing all rows, add the total cycle time in column D of the last row
+            const totalCycleTimeString = `${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`;
+
+            // Append the total cycle time in the last row of column D
+            const lastRowIndex = excelRows.length - 1;
+            excelRows[lastRowIndex].push(totalCycleTimeString);  // Add the net total cycle time
+
             console.log('Excel rows after update:', excelRows);
 
             // Create the updated worksheet
@@ -208,6 +215,7 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
+
 
 function addCycleTimes(time1, time2) {
     const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
