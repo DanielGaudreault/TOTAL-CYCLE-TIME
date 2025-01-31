@@ -68,6 +68,7 @@ async function processFiles() {
                 }
             }
         }
+
         console.log(`Total accumulated cycle time: ${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`);
 
     } catch (error) {
@@ -215,8 +216,7 @@ function updateToExcel() {
             const totalCycleTimeString = `${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`;
 
             // Append the total cycle time in the last row of column D
-            const lastRowIndex = excelRows.length - 1;
-            excelRows[lastRowIndex].push(totalCycleTimeString);  // Add the net total cycle time
+            excelRows.push(['', '', '', totalCycleTimeString]);  // Add the net total cycle time
 
             console.log('Excel rows after update:', excelRows);
 
@@ -245,7 +245,6 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
-
 
 function addCycleTimes(time1, time2) {
     const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
