@@ -30,7 +30,8 @@ async function processFiles() {
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    const cleanProjectName = projectName.split(':')[1].trim();
+                    // Clean the project name by removing "R0", "R1", "R2", etc.
+                    const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     results.push({ projectName: cleanProjectName, cycleTime });
                     const row = tbody.insertRow();
                     row.insertCell().textContent = file.name;
@@ -156,15 +157,16 @@ function updateToExcel() {
                 const itemNo = (row[1] || '').toString().trim(); // Assuming Item No is in column B (index 1)
                 console.log(`Processing row ${i + 1}: Item No. "${itemNo}"`);
 
-                // Normalize Item No
-                const normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                // Normalize Item No by removing "R" followed by digits
+                const normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().replace(/r\d+/g, '');
                 console.log(`Normalized Item No: "${normalizedItemNo}"`);
 
                 let matchFound = false;
 
                 // Loop through the results array (PDFs data)
                 results.forEach((result) => {
-                    const normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    // Clean the project name by removing "R0", "R1", "R2", etc.
+                    const normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().replace(/r\d+/g, '');
                     console.log(`Checking if "${normalizedItemNo}" matches with "${normalizedProjectName}"`);
 
                     if (normalizedItemNo === normalizedProjectName) {
