@@ -150,25 +150,25 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Confirm the Results data
+            // Log the Results data (project names and cycle times)
             console.log('Results data (from PDF extraction):', results);
 
             // Loop through Excel rows and check if there is a match
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim(); // Assuming "Item No." is in column B (index 1)
-                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
                 console.log(`Processing row ${i + 1}:`);
-                console.log(`Item No (from Excel): "${itemNo}", Normalized: "${normalizedItemNo}"`);
+                console.log(`Item No (from Excel): "${itemNo}"`);
 
-                // Loop through the results and compare each project name with the normalized Excel Item No.
                 let matchFound = false;
                 results.forEach(result => {
-                    let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    console.log(`Checking if Excel Item No: "${normalizedItemNo}" matches Project Name: "${result.projectName}"`);
+                    let projectName = result.projectName.trim();
 
-                    if (normalizedProjectName === normalizedItemNo) {
+                    console.log(`Checking if Excel Item No: "${itemNo}" matches Project Name: "${projectName}"`);
+
+                    // Let's check if the Item No. from Excel exactly matches the Project Name (case-sensitive)
+                    if (projectName === itemNo) {
                         console.log(`Match found! Project Name: "${result.projectName}", Cycle Time: "${result.cycleTime}"`);
                         row[3] = result.cycleTime; // Update the Excel row (Column D)
                         matchFound = true;
@@ -206,7 +206,6 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
-
 
 
 function addCycleTimes(time1, time2) {
