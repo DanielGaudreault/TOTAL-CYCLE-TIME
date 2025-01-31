@@ -150,19 +150,24 @@ function updateToExcel() {
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim();  // Assuming Item No. is in column B (index 1)
+                console.log(`Processing row ${i + 1}: Item No. "${itemNo}"`);
+
                 let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize Item No.
-                
+                let matchFound = false;
+
                 // Attempt to find a match in the PDF results
-                let match = results.find(result => {
+                results.forEach(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize project name
-                    return normalizedProjectName === normalizedItemNo;
+                    console.log(`Comparing Item No.: "${normalizedItemNo}" with Project Name: "${normalizedProjectName}"`);
+
+                    if (normalizedProjectName === normalizedItemNo) {
+                        console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
+                        row[3] = result.cycleTime; // Update the Excel row (Column D)
+                        matchFound = true;
+                    }
                 });
 
-                if (match) {
-                    // If match found, update the cycle time in the 4th column (index 3) of the Excel row
-                    row[3] = match.cycleTime;
-                    console.log(`Updated row ${i + 1}: Item No. "${itemNo}" matched! Cycle time: ${match.cycleTime}`);
-                } else {
+                if (!matchFound) {
                     console.log(`No match found for Item No: "${itemNo}"`);
                 }
             }
