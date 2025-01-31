@@ -145,7 +145,7 @@ function updateToExcel() {
 
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1}); // Reading all rows as an array of arrays
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1}); // Read as raw data array
 
             console.log('Excel rows before update:', excelRows);
             console.log('Results data:', results); // Assuming results is the array with the PDF data
@@ -159,7 +159,7 @@ function updateToExcel() {
                 console.log(`Processing row ${i + 1}:`, row);
                 console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}" (Original: "${itemNo}")`);
 
-                // Find a match in the results array (PDF data)
+                // Check if there's a match in the results array
                 let match = results.find(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     console.log(`Comparing normalized PDF project name: "${normalizedProjectName}" with normalized Excel item: "${normalizedItemNo}"`);
@@ -168,7 +168,7 @@ function updateToExcel() {
 
                 if (match) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
-                    // Column D (index 3) is where we want to add the net total cycle time
+                    // Update Column D (index 3) with the cycle time
                     row[3] = match.cycleTime;
                     console.log(`Updated row ${i + 1}:`, row);
                 } else {
@@ -178,13 +178,13 @@ function updateToExcel() {
 
             console.log('Excel rows after update:', excelRows);
 
-            // Write the updated data to a new worksheet
+            // Create new sheet with updated data
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
             console.log('New Workbook before writing:', newWB);
 
-            // Blob download approach to create the new file and trigger download
+            // Blob download approach to trigger the file download
             const wbout = XLSX.write(newWB, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
