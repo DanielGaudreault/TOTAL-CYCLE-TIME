@@ -41,9 +41,9 @@ async function processFiles() {
                     const minutes = parseInt(timeParts[1].replace('m', ''), 10);
                     const seconds = parseInt(timeParts[2].replace('s', ''), 10);
 
-                    console.log(`Processing cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
+                    console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
-                    // Add to the total cycle time using the addCycleTimes function
+                    // Add to the total cycle time
                     totalCycleTime = addCycleTimes(totalCycleTime, { hours, minutes, seconds });
 
                     // Add a row for each PDF processed
@@ -235,6 +235,7 @@ function updateToExcel() {
 // Function to add two time objects (hours, minutes, seconds)
 function addCycleTimes(time1, time2) {
     const totalSeconds = (time1.hours + time2.hours) * 3600 + (time1.minutes + time2.minutes) * 60 + (time1.seconds + time2.seconds);
+    console.log(`Adding times: ${time1.hours}h ${time1.minutes}m ${time1.seconds}s + ${time2.hours}h ${time2.minutes}m ${time2.seconds}s = ${totalSeconds} seconds`);
     return {
         hours: Math.floor(totalSeconds / 3600),
         minutes: Math.floor((totalSeconds % 3600) / 60),
