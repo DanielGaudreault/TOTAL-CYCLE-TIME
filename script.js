@@ -148,10 +148,10 @@ function updateToExcel() {
             let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read as raw data array
 
             console.log('Excel rows before update:', excelRows);
-            console.log('Results data:', results); // Assuming results is the array with the PDF data
+            console.log('Results data:', results); // Ensure results is populated correctly
 
-            // Loop through each row of the Excel sheet and check if we can update it
-            let updatedRows = false; // Flag to track if any rows were updated
+            // Flag to check if we update any rows
+            let updatedRows = false;
 
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
@@ -161,7 +161,7 @@ function updateToExcel() {
                 console.log(`Processing row ${i + 1}:`);
                 console.log(`Item No (from Excel): "${itemNo}", Normalized: "${normalizedItemNo}"`);
 
-                // Now let's check if there's a match in the results array
+                // Check for matching project name in results array
                 let match = results.find(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                     console.log(`Comparing with PDF project name: "${result.projectName}", Normalized: "${normalizedProjectName}"`);
@@ -169,8 +169,8 @@ function updateToExcel() {
                 });
 
                 if (match) {
-                    console.log(`Match found! Updating row ${i + 1} with cycle time: ${match.cycleTime}`);
-                    row[3] = match.cycleTime; // Update column D (index 3) with the cycle time
+                    console.log(`Match found for Item No: ${itemNo}. Updating row ${i + 1} with cycle time: ${match.cycleTime}`);
+                    row[3] = match.cycleTime; // Update Column D (index 3) with cycle time
                     updatedRows = true;
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
@@ -183,7 +183,7 @@ function updateToExcel() {
                 console.log('No rows were updated.');
             }
 
-            // After processing the rows, write the updated data back to the Excel file
+            // Save the updated data back to Excel file
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
