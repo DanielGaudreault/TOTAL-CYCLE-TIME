@@ -133,52 +133,44 @@ function updateToExcel() {
         return;
     }
 
-    console.log('Excel file selected:', file.name);
-
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            console.log('Reading Excel file...');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
 
-            console.log('Workbook loaded:', workbook);
-
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read as raw data array
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read raw data
 
             console.log('Excel rows before update:', excelRows);
+            console.log('PDF results to match:', results);
 
-            console.log('Results data (from PDF extraction):', results);
-
-            // Loop through Excel rows and check if there is a match
+            // Loop through each row in Excel
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                let itemNo = (row[1] || '').toString().trim(); // Assuming "Item No." is in column B (index 1)
-                console.log(`Processing row ${i + 1}: Item No. from Excel: "${itemNo}"`);
-
-                let matchFound = false;
-                results.forEach(result => {
-                    let projectName = result.projectName.trim();
-
-                    console.log(`Checking if Item No. "${itemNo}" matches Project Name: "${projectName}"`);
-
-                    if (projectName === itemNo) {
-                        console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
-                        row[3] = result.cycleTime; // Update the Excel row (Column D)
-                        matchFound = true;
-                    }
+                let itemNo = (row[1] || '').toString().trim();  // Assuming Item No. is in column B (index 1)
+                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize Item No.
+                
+                // Attempt to find a match in the PDF results
+                let match = results.find(result => {
+                    let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize project name
+                    return normalizedProjectName === normalizedItemNo;
                 });
 
-                if (!matchFound) {
-                    console.log(`No match found for Item No: ${itemNo}`);
+                if (match) {
+                    // If match found, update the cycle time in the 4th column (index 3) of the Excel row
+                    row[3] = match.cycleTime;
+                    console.log(`Updated row ${i + 1}: Item No. "${itemNo}" matched! Cycle time: ${match.cycleTime}`);
+                } else {
+                    console.log(`No match found for Item No: "${itemNo}"`);
                 }
             }
 
+            // Log the rows after update for verification
             console.log('Excel rows after update:', excelRows);
 
-            // Create new sheet with updated data
+            // Create new Excel file with updated data
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
