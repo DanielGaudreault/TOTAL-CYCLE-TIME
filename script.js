@@ -150,41 +150,44 @@ function updateToExcel() {
             console.log('Excel rows before update:', excelRows);
             console.log('Results data:', results); // Assuming results is the array with the PDF data
 
-            // Loop through each row of the Excel sheet
+            // Loop through each row of the Excel sheet and check if we can update it
+            let updatedRows = false; // Flag to track if any rows were updated
+
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim(); // Assuming "Item No." is in column B (index 1)
                 let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-                console.log(`Processing row ${i + 1}:`, row);
-                console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}" (Original: "${itemNo}")`);
+                console.log(`Processing row ${i + 1}:`);
+                console.log(`Item No (from Excel): "${itemNo}", Normalized: "${normalizedItemNo}"`);
 
-                // Check if there's a match in the results array
+                // Now let's check if there's a match in the results array
                 let match = results.find(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    console.log(`Comparing normalized PDF project name: "${normalizedProjectName}" with normalized Excel item: "${normalizedItemNo}"`);
+                    console.log(`Comparing with PDF project name: "${result.projectName}", Normalized: "${normalizedProjectName}"`);
                     return normalizedProjectName === normalizedItemNo;
                 });
 
                 if (match) {
-                    console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
-                    // Update Column D (index 3) with the cycle time
-                    row[3] = match.cycleTime; // Updating column D with the cycle time
-                    console.log(`Updated row ${i + 1}:`, row);
+                    console.log(`Match found! Updating row ${i + 1} with cycle time: ${match.cycleTime}`);
+                    row[3] = match.cycleTime; // Update column D (index 3) with the cycle time
+                    updatedRows = true;
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
                 }
             }
 
-            console.log('Excel rows after update:', excelRows);
+            if (updatedRows) {
+                console.log('Some rows were updated. Now saving the file.');
+            } else {
+                console.log('No rows were updated.');
+            }
 
-            // Create new sheet with updated data
+            // After processing the rows, write the updated data back to the Excel file
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-            console.log('New Workbook before writing:', newWB);
 
-            // Blob download approach to trigger the file download
             const wbout = XLSX.write(newWB, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
@@ -203,6 +206,7 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
+
 
 
 function addCycleTimes(time1, time2) {
