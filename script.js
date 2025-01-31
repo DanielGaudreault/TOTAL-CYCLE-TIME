@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
+let cycleTimesPerItem = {}; // To store total cycle time per item
 
 async function processFiles() {
     const fileInput = document.getElementById('fileInput');
@@ -19,6 +20,7 @@ async function processFiles() {
 
     results = [];
     totalCycleTime = { hours: 0, minutes: 0, seconds: 0 }; // Reset total cycle time
+    cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
 
@@ -43,8 +45,27 @@ async function processFiles() {
 
                     console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
-                    // Add to the total cycle time
-                    totalCycleTime = addCycleTimes(totalCycleTime, { hours, minutes, seconds });
+                    // Update the cycleTimesPerItem map
+                    if (!cycleTimesPerItem[cleanProjectName]) {
+                        cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
+                    }
+
+                    // Add this cycle time to the corresponding item
+                    cycleTimesPerItem[cleanProjectName].hours += hours;
+                    cycleTimesPerItem[cleanProjectName].minutes += minutes;
+                    cycleTimesPerItem[cleanProjectName].seconds += seconds;
+
+                    // Handle overflow for seconds
+                    if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
+                        cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
+                        cycleTimesPerItem[cleanProjectName].seconds %= 60;
+                    }
+
+                    // Handle overflow for minutes
+                    if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
+                        cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
+                        cycleTimesPerItem[cleanProjectName].minutes %= 60;
+                    }
 
                     // Add a row for each PDF processed
                     const row = tbody.insertRow();
@@ -141,7 +162,6 @@ function resetResults() {
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadExcelInput').value = '';
 }
-
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
@@ -181,32 +201,24 @@ function updateToExcel() {
                 let matchFound = false;
 
                 // Loop through the results array (PDFs data)
-                results.forEach((result) => {
-                    // Clean the project name by removing "R0", "R1", "R2", etc.
-                    const normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().replace(/r\d+/g, '');
+                for (const projectName in cycleTimesPerItem) {
+                    // Normalize project name to match
+                    const normalizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().replace(/r\d+/g, '');
                     console.log(`Checking if "${normalizedItemNo}" matches with "${normalizedProjectName}"`);
 
                     if (normalizedItemNo === normalizedProjectName) {
-                        console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
-                        row[3] = result.cycleTime; // Update Column D (index 3) with cycle time
+                        console.log(`Match found! Updating Cycle Time: "${cycleTimesPerItem[projectName].hours}h ${cycleTimesPerItem[projectName].minutes}m ${cycleTimesPerItem[projectName].seconds}s"`);
+                        row[3] = `${cycleTimesPerItem[projectName].hours}h ${cycleTimesPerItem[projectName].minutes}m ${cycleTimesPerItem[projectName].seconds}s`; // Update Column D
                         matchFound = true;
                     }
-                });
+                }
 
                 if (!matchFound) {
                     console.log(`No match found for Item No. "${itemNo}"`);
                 }
             }
 
-            // After processing all rows, add the total cycle time in column D of the last row
-            const totalCycleTimeString = `${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`;
-
-            // Append the total cycle time in the last row of column D
-            excelRows.push(['', '', '', totalCycleTimeString]);  // Add the net total cycle time
-
-            console.log('Excel rows after update:', excelRows);
-
-            // Create the updated worksheet
+            // After processing all rows, create the updated worksheet
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
