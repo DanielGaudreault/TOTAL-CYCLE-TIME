@@ -124,7 +124,7 @@ function resetResults() {
     document.getElementById('uploadExcelInput').value = '';
 }
 
-function updateToExcel() {
+function updateToExcelWithMatching() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
 
@@ -150,26 +150,22 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Log the Results data (project names and cycle times)
             console.log('Results data (from PDF extraction):', results);
 
             // Loop through Excel rows and check if there is a match
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim(); // Assuming "Item No." is in column B (index 1)
-
-                console.log(`Processing row ${i + 1}:`);
-                console.log(`Item No (from Excel): "${itemNo}"`);
+                console.log(`Processing row ${i + 1}: Item No. from Excel: "${itemNo}"`);
 
                 let matchFound = false;
                 results.forEach(result => {
                     let projectName = result.projectName.trim();
 
-                    console.log(`Checking if Excel Item No: "${itemNo}" matches Project Name: "${projectName}"`);
+                    console.log(`Checking if Item No. "${itemNo}" matches Project Name: "${projectName}"`);
 
-                    // Let's check if the Item No. from Excel exactly matches the Project Name (case-sensitive)
                     if (projectName === itemNo) {
-                        console.log(`Match found! Project Name: "${result.projectName}", Cycle Time: "${result.cycleTime}"`);
+                        console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
                         row[3] = result.cycleTime; // Update the Excel row (Column D)
                         matchFound = true;
                     }
@@ -180,7 +176,6 @@ function updateToExcel() {
                 }
             }
 
-            // After processing, log the updated Excel rows
             console.log('Excel rows after update:', excelRows);
 
             // Create new sheet with updated data
