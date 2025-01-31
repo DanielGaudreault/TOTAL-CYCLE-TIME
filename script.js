@@ -145,48 +145,41 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Map cycle times directly without normalization for debugging
-            let cycleTimeByItemNo = {};
-            results.forEach(result => {
-                console.log(`Adding project name: "${result.projectName}" with cycle time: "${result.cycleTime}"`);
-                cycleTimeByItemNo[result.projectName] = result.cycleTime;
-            });
-            console.log('Cycle Time by Item No:', cycleTimeByItemNo);
-
-            // Update rows directly without extensive normalization
-            for (let i = 0; i < excelRows.length; i++) {
-                const row = excelRows[i];
+            // Instead of modifying, we'll create new data array
+            let newData = excelRows.map(row => {
                 let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                 console.log(`Checking for match with Item No from Excel: "${itemNo}"`);
 
-                if (itemNo in cycleTimeByItemNo) {
-                    console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${cycleTimeByItemNo[itemNo]}`);
-                    row[3] = cycleTimeByItemNo[itemNo]; // Update cycle time in column D (index 3)
-                    console.log(`Updated row ${i + 1}:`, row);
+                // Check if there's a match for this item no
+                let match = results.find(result => result.projectName === itemNo);
+                if (match) {
+                    console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
+                    // Create a new row with updated cycle time
+                    return [...row.slice(0, 3), match.cycleTime, ...row.slice(4)];
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
+                    return row; // Return row unchanged if no match
                 }
-            }
+            });
 
-            console.log('Excel rows after update:', excelRows);
+            console.log('New data after update:', newData);
 
-            // Convert back to worksheet format
-            const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+            // Create a new workbook and worksheet with updated data
+            const newWS = XLSX.utils.aoa_to_sheet(newData);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
-            console.log('New workbook before writing:', newWB);
-            
-            // Attempt to write the file with error handling for file permissions
+
+            // Writing a new file instead of updating
             try {
-                XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
-                alert('Excel sheet has been updated with new cycle times.');
+                XLSX.writeFile(newWB, 'new_cycle_times.xlsx');
+                alert('New Excel sheet has been created with updated cycle times.');
             } catch (saveError) {
-                console.error('Error saving file:', saveError);
-                alert('An error occurred while saving the updated Excel file. Check console for details.');
+                console.error('Error saving new file:', saveError);
+                alert('An error occurred while saving the new Excel file. Check console for details.');
             }
         } catch (error) {
-            console.error('Error updating Excel:', error);
-            alert('An error occurred while updating the Excel file. Check console for details.');
+            console.error('Error processing Excel:', error);
+            alert('An error occurred while processing the Excel file. Check console for details.');
         }
     };
     reader.readAsArrayBuffer(file);
