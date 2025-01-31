@@ -159,7 +159,7 @@ function updateToExcel() {
                 const row = excelRows[i];
                 let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                 let normalizedItemNo = itemNo.replace(/[\s\-\.]/g, '').toLowerCase();
-                console.log(`Checking for match with normalized Item No from Excel: ${normalizedItemNo}, Original: ${itemNo}`);
+                console.log('Comparing:', normalizedProjectName, 'with', normalizedItemNo);
 
                 if (normalizedItemNo in cycleTimeByItemNo) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${cycleTimeByItemNo[normalizedItemNo]}`);
@@ -181,6 +181,7 @@ function updateToExcel() {
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+            console.log('New workbook before writing:', newWB);
             XLSX.writeFile(newWB, 'updated_cycle_times.xlsx');
             alert('Excel sheet has been updated with new cycle times.');
         } catch (error) {
