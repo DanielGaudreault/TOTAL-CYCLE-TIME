@@ -141,18 +141,19 @@ function updateToExcel() {
             console.log('Reading Excel file...');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            console.log('Workbook after reading:', workbook);
+
+            console.log('Workbook loaded:', workbook);
 
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read as raw data array
 
             console.log('Excel rows before update:', excelRows);
-            console.log('Results data:', results); // Ensure results is populated correctly
 
-            // Flag to check if we update any rows
-            let updatedRows = false;
+            // Confirm the Results data
+            console.log('Results data (from PDF extraction):', results);
 
+            // Loop through Excel rows and check if there is a match
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim(); // Assuming "Item No." is in column B (index 1)
@@ -161,29 +162,28 @@ function updateToExcel() {
                 console.log(`Processing row ${i + 1}:`);
                 console.log(`Item No (from Excel): "${itemNo}", Normalized: "${normalizedItemNo}"`);
 
-                // Check for matching project name in results array
-                let match = results.find(result => {
+                // Loop through the results and compare each project name with the normalized Excel Item No.
+                let matchFound = false;
+                results.forEach(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    console.log(`Comparing with PDF project name: "${result.projectName}", Normalized: "${normalizedProjectName}"`);
-                    return normalizedProjectName === normalizedItemNo;
+                    console.log(`Checking if Excel Item No: "${normalizedItemNo}" matches Project Name: "${result.projectName}"`);
+
+                    if (normalizedProjectName === normalizedItemNo) {
+                        console.log(`Match found! Project Name: "${result.projectName}", Cycle Time: "${result.cycleTime}"`);
+                        row[3] = result.cycleTime; // Update the Excel row (Column D)
+                        matchFound = true;
+                    }
                 });
 
-                if (match) {
-                    console.log(`Match found for Item No: ${itemNo}. Updating row ${i + 1} with cycle time: ${match.cycleTime}`);
-                    row[3] = match.cycleTime; // Update Column D (index 3) with cycle time
-                    updatedRows = true;
-                } else {
+                if (!matchFound) {
                     console.log(`No match found for Item No: ${itemNo}`);
                 }
             }
 
-            if (updatedRows) {
-                console.log('Some rows were updated. Now saving the file.');
-            } else {
-                console.log('No rows were updated.');
-            }
+            // After processing, log the updated Excel rows
+            console.log('Excel rows after update:', excelRows);
 
-            // Save the updated data back to Excel file
+            // Create new sheet with updated data
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
