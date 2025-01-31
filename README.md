@@ -1,5 +1,3 @@
-# TOTAL-CYCLE-TIME
-
 # PDF Data Extractor to Excel Updater
 A simple web application to extract project names and cycle times from PDFs and update an Excel sheet.
 
