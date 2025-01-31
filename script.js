@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
 });
 
-let results = []; // Store results for all files
+let totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
 
 async function processFiles() {
     const fileInput = document.getElementById('fileInput');
@@ -18,6 +18,7 @@ async function processFiles() {
     }
 
     results = [];
+    totalCycleTime = { hours: 0, minutes: 0, seconds: 0 }; // Reset total cycle time
     tbody.innerHTML = '';
     loading.style.display = 'block';
 
@@ -33,6 +34,30 @@ async function processFiles() {
                     // Clean the project name by removing all "R" followed by digits (e.g., "R1", "R2", "R3")
                     const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     results.push({ projectName: cleanProjectName, cycleTime });
+
+                    // Calculate total cycle time
+                    const timeParts = cycleTime.split(' ');
+                    const hours = parseInt(timeParts[0].replace('h', ''), 10);
+                    const minutes = parseInt(timeParts[1].replace('m', ''), 10);
+                    const seconds = parseInt(timeParts[2].replace('s', ''), 10);
+
+                    // Add to the total cycle time
+                    totalCycleTime.hours += hours;
+                    totalCycleTime.minutes += minutes;
+                    totalCycleTime.seconds += seconds;
+
+                    // Handle overflow for minutes and seconds
+                    if (totalCycleTime.seconds >= 60) {
+                        totalCycleTime.minutes += Math.floor(totalCycleTime.seconds / 60);
+                        totalCycleTime.seconds = totalCycleTime.seconds % 60;
+                    }
+
+                    if (totalCycleTime.minutes >= 60) {
+                        totalCycleTime.hours += Math.floor(totalCycleTime.minutes / 60);
+                        totalCycleTime.minutes = totalCycleTime.minutes % 60;
+                    }
+
+                    // Add a row for each PDF processed
                     const row = tbody.insertRow();
                     row.insertCell().textContent = file.name;
                     row.insertCell().textContent = cleanProjectName;
