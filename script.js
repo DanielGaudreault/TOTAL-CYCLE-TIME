@@ -35,23 +35,26 @@ async function processFiles() {
                     const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     results.push({ projectName: cleanProjectName, cycleTime });
 
-                    // Calculate total cycle time
+                    // Parse cycle time (hours, minutes, seconds)
                     const timeParts = cycleTime.split(' ');
                     const hours = parseInt(timeParts[0].replace('h', ''), 10);
                     const minutes = parseInt(timeParts[1].replace('m', ''), 10);
                     const seconds = parseInt(timeParts[2].replace('s', ''), 10);
+
+                    console.log(`Processing cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
                     // Add to the total cycle time
                     totalCycleTime.hours += hours;
                     totalCycleTime.minutes += minutes;
                     totalCycleTime.seconds += seconds;
 
-                    // Handle overflow for minutes and seconds
+                    // Handle overflow for seconds
                     if (totalCycleTime.seconds >= 60) {
                         totalCycleTime.minutes += Math.floor(totalCycleTime.seconds / 60);
                         totalCycleTime.seconds = totalCycleTime.seconds % 60;
                     }
 
+                    // Handle overflow for minutes
                     if (totalCycleTime.minutes >= 60) {
                         totalCycleTime.hours += Math.floor(totalCycleTime.minutes / 60);
                         totalCycleTime.minutes = totalCycleTime.minutes % 60;
@@ -65,6 +68,8 @@ async function processFiles() {
                 }
             }
         }
+        console.log(`Total accumulated cycle time: ${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`);
+
     } catch (error) {
         console.error("Error processing files:", error);
         alert('An error occurred while processing the files.');
