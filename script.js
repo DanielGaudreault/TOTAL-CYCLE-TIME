@@ -145,41 +145,41 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Instead of modifying, we'll create new data array
-            let newData = excelRows.map(row => {
+            // Update existing rows in Excel, matching with column B for 'Item No.'
+            for (let i = 0; i < excelRows.length; i++) {
+                const row = excelRows[i];
                 let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
                 console.log(`Checking for match with Item No from Excel: "${itemNo}"`);
 
-                // Check if there's a match for this item no
                 let match = results.find(result => result.projectName === itemNo);
                 if (match) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
-                    // Create a new row with updated cycle time
-                    return [...row.slice(0, 3), match.cycleTime, ...row.slice(4)];
+                    // Update only the cycle time in column D (index 3)
+                    row[3] = match.cycleTime;
+                    console.log(`Updated row ${i + 1}:`, row);
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
-                    return row; // Return row unchanged if no match
                 }
-            });
+            }
 
-            console.log('New data after update:', newData);
+            console.log('Excel rows after update:', excelRows);
 
-            // Create a new workbook and worksheet with updated data
-            const newWS = XLSX.utils.aoa_to_sheet(newData);
+            // Convert back to worksheet format
+            const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
-            // Writing a new file instead of updating
+            // Write back to the same file name
             try {
-                XLSX.writeFile(newWB, 'new_cycle_times.xlsx');
-                alert('New Excel sheet has been created with updated cycle times.');
+                XLSX.writeFile(newWB, file.name);
+                alert('Excel sheet has been updated with new cycle times.');
             } catch (saveError) {
-                console.error('Error saving new file:', saveError);
-                alert('An error occurred while saving the new Excel file. Check console for details.');
+                console.error('Error saving file:', saveError);
+                alert('An error occurred while saving the updated Excel file. Check console for details.');
             }
         } catch (error) {
-            console.error('Error processing Excel:', error);
-            alert('An error occurred while processing the Excel file. Check console for details.');
+            console.error('Error updating Excel:', error);
+            alert('An error occurred while updating the Excel file. Check console for details.');
         }
     };
     reader.readAsArrayBuffer(file);
