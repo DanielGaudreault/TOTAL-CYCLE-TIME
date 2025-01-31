@@ -140,12 +140,12 @@ function updateToExcel() {
         try {
             console.log('Reading Excel file...');
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, { type: 'array' });
             console.log('Workbook after reading:', workbook);
 
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1}); // Read as raw data array
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read as raw data array
 
             console.log('Excel rows before update:', excelRows);
             console.log('Results data:', results); // Assuming results is the array with the PDF data
