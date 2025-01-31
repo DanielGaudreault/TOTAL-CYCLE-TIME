@@ -125,25 +125,46 @@ function resetResults() {
 }
 
 function updateToExcel() {
-    // ... (previous code remains the same)
+    const fileInput = document.getElementById('uploadExcelInput');
+    const file = fileInput.files[0];
 
+    if (!file) {
+        alert('Please select an Excel file to update.');
+        return;
+    }
+
+    const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            // ... (Excel reading and initial console logs)
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
 
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+            console.log('Excel rows before update:', excelRows);
+
+            // Log every project name from PDF for debugging
+            console.log('Project names from PDFs:', results.map(r => r.projectName));
+
+            // Update existing rows in Excel, matching with column B for 'Item No.'
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim();
-                let normalizedItemNo = itemNo.replace(/[\s\-\._]/g, '').toLowerCase();
-                console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}"`);
+                // Normalize both project names and item numbers aggressively
+                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}" (Original: "${itemNo}")`);
 
                 let match = results.find(result => {
-                    let normalizedProjectName = result.projectName.replace(/[\s\-\._]/g, '').toLowerCase();
+                    let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    console.log(`Comparing normalized PDF project name: "${normalizedProjectName}" with normalized Excel item: "${normalizedItemNo}"`);
                     return normalizedProjectName === normalizedItemNo;
                 });
 
                 if (match) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
+                    // Update only the cycle time in column D (index 3)
                     row[3] = match.cycleTime;
                     console.log(`Updated row ${i + 1}:`, row);
                 } else {
@@ -151,9 +172,14 @@ function updateToExcel() {
                 }
             }
 
-            // ... (convert to worksheet)
+            console.log('Excel rows after update:', excelRows);
 
-            // Instead of writing directly to file:
+            // Convert back to worksheet format
+            const newWS = XLSX.utils.aoa_to_sheet(excelRows);
+            const newWB = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
+
+            // Use Blob to trigger download instead of direct file writing
             const wbout = XLSX.write(newWB, { bookType:'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
@@ -170,7 +196,6 @@ function updateToExcel() {
             alert('An error occurred while updating the Excel file. Check console for details.');
         }
     };
-
     reader.readAsArrayBuffer(file);
 }
 function addCycleTimes(time1, time2) {
