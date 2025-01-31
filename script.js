@@ -36,11 +36,11 @@ async function processFiles() {
                     // Clean the project name by removing all "R" followed by digits (e.g., "R1", "R2", "R3")
                     let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     
-                    // Remove anything after and including a decimal point
-                    cleanProjectName = cleanProjectName.split('.')[0];
+                    // Remove anything after and including a comma
+                    cleanProjectName = cleanProjectName.split(',')[0].trim();
 
-                    // Check if there's no decimal point or anything beyond
-                    if (!/\./.test(cleanProjectName)) {
+                    // Check if there's no comma or anything beyond
+                    if (cleanProjectName) {
                         results.push({ projectName: cleanProjectName, cycleTime });
 
                         // Parse cycle time (hours, minutes, seconds)
@@ -79,7 +79,7 @@ async function processFiles() {
                         row.insertCell().textContent = cleanProjectName;
                         row.insertCell().textContent = cycleTime;
                     } else {
-                        console.log(`Skipping project name with decimal: ${cleanProjectName}`);
+                        console.log(`Skipping project name with comma: ${projectName}`);
                     }
                 }
             }
@@ -94,8 +94,6 @@ async function processFiles() {
         loading.style.display = 'none';
     }
 }
-
-// ... Rest of your code remains unchanged ...
 
 function readFile(file) {
     return new Promise((resolve, reject) => {
