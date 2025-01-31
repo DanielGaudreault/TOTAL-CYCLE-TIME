@@ -30,7 +30,7 @@ async function processFiles() {
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    // Clean the project name by removing "R0", "R1", "R2", etc.
+                    // Clean the project name by removing "R" followed by any number (e.g., "R1", "R2", etc.)
                     const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     results.push({ projectName: cleanProjectName, cycleTime });
                     const row = tbody.insertRow();
@@ -157,7 +157,7 @@ function updateToExcel() {
                 const itemNo = (row[1] || '').toString().trim(); // Assuming Item No is in column B (index 1)
                 console.log(`Processing row ${i + 1}: Item No. "${itemNo}"`);
 
-                // Normalize Item No by removing "R" followed by digits
+                // Normalize Item No by removing "R" followed by digits (R0, R1, R2, etc.)
                 const normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().replace(/r\d+/g, '');
                 console.log(`Normalized Item No: "${normalizedItemNo}"`);
 
@@ -208,6 +208,7 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
+
 
 
 function addCycleTimes(time1, time2) {
