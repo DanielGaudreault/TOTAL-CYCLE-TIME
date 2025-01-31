@@ -145,31 +145,29 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
-            // Normalize data for comparison (remove spaces, dashes, dots, convert to lowercase)
             let cycleTimeByItemNo = {};
             results.forEach(result => {
-                let normalizedProjectName = result.projectName.replace(/[\s\-\.]/g, '').toLowerCase();
-                console.log(`Normalized project name from PDF: ${normalizedProjectName}, Original: ${result.projectName}`);
+                let normalizedProjectName = result.projectName.replace(/[\s\-\._]/g, '').toLowerCase();
+                console.log(`Normalized project name from PDF: "${normalizedProjectName}" Original: "${result.projectName}"`);
                 cycleTimeByItemNo[normalizedProjectName] = result.cycleTime;
             });
             console.log('Cycle Time by Normalized Item No:', cycleTimeByItemNo);
 
-            // Update existing rows in Excel, matching with column B for 'Item No.'
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
-                let normalizedItemNo = itemNo.replace(/[\s\-\.]/g, '').toLowerCase();
-                console.log('Comparing:', normalizedProjectName, 'with', normalizedItemNo);
+                let normalizedItemNo = itemNo.replace(/[\s\-\._]/g, '').toLowerCase();
+                console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}" Original: "${itemNo}"`);
 
                 if (normalizedItemNo in cycleTimeByItemNo) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${cycleTimeByItemNo[normalizedItemNo]}`);
                     row[3] = cycleTimeByItemNo[normalizedItemNo]; // Update cycle time in column D (index 3)
-                    console.log(`Updated cycle time for Item No ${itemNo}:`, row);
+                    console.log(`Updated row ${i + 1}:`, row);
                 } else {
                     console.log(`No match found for Item No: ${itemNo}. Checking for possible matches:`);
                     Object.keys(cycleTimeByItemNo).forEach(key => {
                         if (key.includes(normalizedItemNo)) {
-                            console.log(`Possible match: ${key} for ${normalizedItemNo}`);
+                            console.log(`Possible match: "${key}" for "${normalizedItemNo}"`);
                         }
                     });
                 }
@@ -177,7 +175,6 @@ function updateToExcel() {
 
             console.log('Excel rows after update:', excelRows);
 
-            // Convert back to worksheet format
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
