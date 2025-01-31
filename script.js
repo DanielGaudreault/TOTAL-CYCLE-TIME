@@ -136,6 +136,7 @@ function updateToExcel() {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
+            // Read the file as an array buffer
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
 
@@ -144,21 +145,24 @@ function updateToExcel() {
             let excelRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Read raw data
 
             console.log('Excel rows before update:', excelRows);
-            console.log('PDF results to match:', results);
+            console.log('Results to match (from PDFs):', results);
 
             // Loop through each row in Excel
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
                 let itemNo = (row[1] || '').toString().trim();  // Assuming Item No. is in column B (index 1)
+
+                // Log the current Item No.
                 console.log(`Processing row ${i + 1}: Item No. "${itemNo}"`);
 
-                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize Item No.
+                // Normalize the Item No. (strip special characters, lowercased)
+                let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                 let matchFound = false;
 
                 // Attempt to find a match in the PDF results
                 results.forEach(result => {
                     let normalizedProjectName = result.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); // Normalize project name
-                    console.log(`Comparing Item No.: "${normalizedItemNo}" with Project Name: "${normalizedProjectName}"`);
+                    console.log(`Comparing Item No. "${normalizedItemNo}" with Project Name: "${normalizedProjectName}"`);
 
                     if (normalizedProjectName === normalizedItemNo) {
                         console.log(`Match found! Updating Cycle Time: "${result.cycleTime}"`);
@@ -167,6 +171,7 @@ function updateToExcel() {
                     }
                 });
 
+                // If no match was found, log that information
                 if (!matchFound) {
                     console.log(`No match found for Item No: "${itemNo}"`);
                 }
@@ -180,6 +185,7 @@ function updateToExcel() {
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
+            // Generate the updated Excel file
             const wbout = XLSX.write(newWB, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
@@ -191,6 +197,7 @@ function updateToExcel() {
             setTimeout(() => URL.revokeObjectURL(url), 100);
 
             alert('Excel sheet has been updated. Download will start automatically.');
+
         } catch (error) {
             console.error('Error updating Excel:', error);
             alert('An error occurred while updating the Excel file. Check console for details.');
