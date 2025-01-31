@@ -30,7 +30,7 @@ async function processFiles() {
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    // Clean the project name by removing "R" followed by any number (e.g., "R1", "R2", etc.)
+                    // Clean the project name by removing all "R" followed by digits (e.g., "R1", "R2", "R3")
                     const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     results.push({ projectName: cleanProjectName, cycleTime });
                     const row = tbody.insertRow();
@@ -208,8 +208,6 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
-
-
 
 function addCycleTimes(time1, time2) {
     const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
