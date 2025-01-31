@@ -148,11 +148,12 @@ function updateToExcel() {
             let excelRows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
             console.log('Excel rows before update:', excelRows);
-            console.log('Results data:', results);
+            console.log('Results data:', results); // Assuming `results` contains the PDF data
 
+            // Loop over the Excel rows to find matching "Item No." and update Column D
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                let itemNo = (row[1] || '').toString().trim();
+                let itemNo = (row[1] || '').toString().trim(); // Assuming Item No is in column 2 (index 1)
                 let normalizedItemNo = itemNo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                 console.log(`Processing row ${i + 1}:`, row);
                 console.log(`Checking for match with normalized Item No from Excel: "${normalizedItemNo}" (Original: "${itemNo}")`);
@@ -165,7 +166,7 @@ function updateToExcel() {
 
                 if (match) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
-                    row[3] = match.cycleTime;
+                    row[3] = match.cycleTime; // Assuming Column D is the 4th column (index 3)
                     console.log(`Updated row ${i + 1}:`, row);
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
@@ -174,13 +175,14 @@ function updateToExcel() {
 
             console.log('Excel rows after update:', excelRows);
 
+            // Write the updated Excel sheet to a new workbook
             const newWS = XLSX.utils.aoa_to_sheet(excelRows);
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
             console.log('New Workbook before writing:', newWB);
 
             // Blob download approach
-            const wbout = XLSX.write(newWB, { bookType:'xlsx', type: 'array' });
+            const wbout = XLSX.write(newWB, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -198,6 +200,7 @@ function updateToExcel() {
     };
     reader.readAsArrayBuffer(file);
 }
+
 function addCycleTimes(time1, time2) {
     const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
     const [h2, m2, s2] = time2.split('h ')[0].split('m ')[0].split('s').map(Number);
