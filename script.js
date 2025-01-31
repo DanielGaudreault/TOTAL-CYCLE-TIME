@@ -43,22 +43,8 @@ async function processFiles() {
 
                     console.log(`Processing cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
-                    // Add to the total cycle time
-                    totalCycleTime.hours += hours;
-                    totalCycleTime.minutes += minutes;
-                    totalCycleTime.seconds += seconds;
-
-                    // Handle overflow for seconds
-                    if (totalCycleTime.seconds >= 60) {
-                        totalCycleTime.minutes += Math.floor(totalCycleTime.seconds / 60);
-                        totalCycleTime.seconds = totalCycleTime.seconds % 60;
-                    }
-
-                    // Handle overflow for minutes
-                    if (totalCycleTime.minutes >= 60) {
-                        totalCycleTime.hours += Math.floor(totalCycleTime.minutes / 60);
-                        totalCycleTime.minutes = totalCycleTime.minutes % 60;
-                    }
+                    // Add to the total cycle time using the addCycleTimes function
+                    totalCycleTime = addCycleTimes(totalCycleTime, { hours, minutes, seconds });
 
                     // Add a row for each PDF processed
                     const row = tbody.insertRow();
@@ -246,9 +232,12 @@ function updateToExcel() {
     reader.readAsArrayBuffer(file);
 }
 
+// Function to add two time objects (hours, minutes, seconds)
 function addCycleTimes(time1, time2) {
-    const [h1, m1, s1] = time1.split('h ')[0].split('m ')[0].split('s').map(Number);
-    const [h2, m2, s2] = time2.split('h ')[0].split('m ')[0].split('s').map(Number);
-    const totalSeconds = (h1 + h2) * 3600 + (m1 + m2) * 60 + (s1 + s2);
-    return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m ${totalSeconds % 60}s`;
+    const totalSeconds = (time1.hours + time2.hours) * 3600 + (time1.minutes + time2.minutes) * 60 + (time1.seconds + time2.seconds);
+    return {
+        hours: Math.floor(totalSeconds / 3600),
+        minutes: Math.floor((totalSeconds % 3600) / 60),
+        seconds: totalSeconds % 60
+    };
 }
