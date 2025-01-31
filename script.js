@@ -145,10 +145,13 @@ function updateToExcel() {
 
             console.log('Excel rows before update:', excelRows);
 
+            // Log every project name from PDF for debugging
+            console.log('Project names from PDFs:', results.map(r => r.projectName));
+
             // Update existing rows in Excel, matching with column B for 'Item No.'
             for (let i = 0; i < excelRows.length; i++) {
                 const row = excelRows[i];
-                let itemNo = row[1]?.toString().trim(); // 'Item No.' is in column B (index 1)
+                let itemNo = (row[1] || '').toString().trim(); // 'Item No.' is in column B (index 1)
                 console.log(`Checking for match with Item No from Excel: "${itemNo}"`);
 
                 let match = results.find(result => result.projectName === itemNo);
@@ -169,7 +172,7 @@ function updateToExcel() {
             const newWB = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(newWB, newWS, sheetName);
 
-            // Write back to the same file name
+            // Write back to the same file name with error handling
             try {
                 XLSX.writeFile(newWB, file.name);
                 alert('Excel sheet has been updated with new cycle times.');
