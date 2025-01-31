@@ -169,7 +169,7 @@ function updateToExcel() {
                 if (match) {
                     console.log(`Match found for Item No: ${itemNo}. Updating with cycle time: ${match.cycleTime}`);
                     // Update Column D (index 3) with the cycle time
-                    row[3] = match.cycleTime;
+                    row[3] = match.cycleTime; // Updating column D with the cycle time
                     console.log(`Updated row ${i + 1}:`, row);
                 } else {
                     console.log(`No match found for Item No: ${itemNo}`);
