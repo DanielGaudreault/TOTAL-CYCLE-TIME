@@ -17,10 +17,12 @@
             <h1>PDF Data Extractor</h1>
         </header>
         <section class="file-section">
-            <div id="fileInputs"></div>
-            <button id="addFileInput">Add File Input</button>
-            <button id="processButton">Process Files</button>
-            <button id="resetButton">Reset Results</button>
+            <div id="fileInputs" class="file-inputs"></div>
+            <div class="button-group">
+                <button id="addFileInput">Add File Input</button>
+                <button id="processButton">Process Files</button>
+                <button id="resetButton">Reset Results</button>
+            </div>
         </section>
         <div id="loading" class="loading" aria-live="polite">Processing...</div>
         <table id="resultsTable" aria-label="Results of processed PDF files">
@@ -34,8 +36,10 @@
             <tbody></tbody>
         </table>
         <section class="upload-section">
-            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Upload Excel file">
-            <button id="uploadExcelButton">Update to Excel</button>
+            <div class="excel-upload">
+                <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Upload Excel file">
+                <button id="uploadExcelButton">Update to Excel</button>
+            </div>
         </section>
     </main>
 
