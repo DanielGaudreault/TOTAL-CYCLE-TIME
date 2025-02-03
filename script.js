@@ -10,7 +10,8 @@ let cycleTimesPerItem = {}; // To store total cycle time per item
 
 function updateFileCount() {
     const countDisplay = document.getElementById('countDisplay');
-    countDisplay.textContent = document.getElementById('fileInput').files.length;
+    const fileCount = Math.min(document.getElementById('fileInput').files.length, 50); // Cap at 50
+    countDisplay.textContent = fileCount;
 }
 
 async function processFiles() {
@@ -30,14 +31,16 @@ async function processFiles() {
     cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
-    loading.textContent = `Processing ${fileInput.files.length} files...`;
+    
+    // Cap processing at 50 files
+    const filesToProcess = Array.from(fileInput.files).slice(0, 50);
+    loading.textContent = `Processing ${filesToProcess.length} files...`;
 
     try {
-        const files = Array.from(fileInput.files);
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        for (let i = 0; i < filesToProcess.length; i++) {
+            const file = filesToProcess[i];
             if (file.type === 'application/pdf') {
-                loading.textContent = `Processing file ${i + 1} of ${files.length}...`;
+                loading.textContent = `Processing file ${i + 1} of ${filesToProcess.length}...`;
                 
                 const content = await readFile(file);
                 const text = await parsePDF(content);
@@ -95,7 +98,7 @@ async function processFiles() {
         alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
-        countDisplay.textContent = fileInput.files.length;
+        countDisplay.textContent = filesToProcess.length;
     }
 }
 
