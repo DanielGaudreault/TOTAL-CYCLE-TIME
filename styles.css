@@ -26,7 +26,7 @@ h1 {
 
 .file-section, .upload-section {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column; /* Changed to column layout for better mobile support */
     margin-bottom: 20px;
 }
 
@@ -42,6 +42,15 @@ button {
 
 button:hover {
     background-color: #218838;
+}
+
+.remove-button {
+    background-color: #dc3545;
+    margin-left: 10px;
+}
+
+.remove-button:hover {
+    background-color: #c82333;
 }
 
 #loading {
@@ -104,11 +113,13 @@ tr:nth-child(even) {
 }
 
 input[type="file"] {
-    flex-grow: 1;
-    margin-right: 10px;
+    margin-bottom: 10px;
 }
 
 @media (max-width: 600px) {
+    .container {
+        width: 95%;
+    }
     .file-section, .upload-section {
         flex-direction: column;
     }
