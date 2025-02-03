@@ -23,24 +23,26 @@ async function processFiles() {
     cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
+    loading.textContent = `Processing ${fileInput.files.length} files...`;
 
     try {
         const files = Array.from(fileInput.files);
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             if (file.type === 'application/pdf') {
+                // Update loading text to show progress
+                loading.textContent = `Processing file ${i + 1} of ${files.length}...`;
+                
                 const content = await readFile(file);
                 const text = await parsePDF(content);
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    // Clean the project name by removing all "R" followed by digits and anything after a comma
                     let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     
-                    // Check if there's a comma in the name
                     if (!cleanProjectName.includes(',')) {
                         results.push({ projectName: cleanProjectName, cycleTime });
 
-                        // Parse cycle time (hours, minutes, seconds)
                         const timeParts = cycleTime.split(' ');
                         const hours = parseInt(timeParts[0].replace('h', ''), 10);
                         const minutes = parseInt(timeParts[1].replace('m', ''), 10);
@@ -48,29 +50,24 @@ async function processFiles() {
 
                         console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
-                        // Update the cycleTimesPerItem map
                         if (!cycleTimesPerItem[cleanProjectName]) {
                             cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
                         }
 
-                        // Add this cycle time to the corresponding item
                         cycleTimesPerItem[cleanProjectName].hours += hours;
                         cycleTimesPerItem[cleanProjectName].minutes += minutes;
                         cycleTimesPerItem[cleanProjectName].seconds += seconds;
 
-                        // Handle overflow for seconds
                         if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
                             cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
                             cycleTimesPerItem[cleanProjectName].seconds %= 60;
                         }
 
-                        // Handle overflow for minutes
                         if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
                             cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
                             cycleTimesPerItem[cleanProjectName].minutes %= 60;
                         }
 
-                        // Add a row for each PDF processed
                         const row = tbody.insertRow();
                         row.insertCell().textContent = file.name;
                         row.insertCell().textContent = cleanProjectName;
@@ -83,6 +80,7 @@ async function processFiles() {
         }
 
         console.log(`Total accumulated cycle time: ${totalCycleTime.hours}h ${totalCycleTime.minutes}m ${totalCycleTime.seconds}s`);
+        loading.textContent = "Processing complete!";
 
     } catch (error) {
         console.error("Error processing files:", error);
@@ -168,6 +166,7 @@ function resetResults() {
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadExcelInput').value = '';
 }
+
 function updateToExcel() {
     const fileInput = document.getElementById('uploadExcelInput');
     const file = fileInput.files[0];
