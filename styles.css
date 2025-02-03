@@ -9,23 +9,29 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: var(--background-color);
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
 }
 
+.background {
+    background-image: url('city\ wallpaper.jpg'); /* Ensure the path is correct relative to your CSS file */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .container {
-    background: var(--white);
+    background: rgba(255, 255, 255, 0.9); /* Semi-transparent white background for content readability */
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     width: 90%;
     max-width: 1000px;
-    /* Center the content inside the container */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -39,7 +45,6 @@ h1 {
 
 .file-section, .upload-section {
     margin-bottom: 20px;
-    /* Ensure content within sections is centered */
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -48,13 +53,13 @@ h1 {
 
 .file-inputs {
     margin-bottom: 10px;
-    width: 100%; /* Ensure full width for alignment */
+    width: 100%;
 }
 
 .file-inputs > div {
     display: flex;
     align-items: center;
-    justify-content: center; /* Center the file input and remove button */
+    justify-content: center;
     width: 100%;
     margin-bottom: 5px;
 }
@@ -68,7 +73,7 @@ h1 {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    width: 100%; /* Full width for proper alignment */
+    width: 100%;
 }
 
 button {
@@ -160,8 +165,8 @@ tr:nth-child(even) {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%; /* Ensure full width for alignment */
-    justify-content: center; /* Center the Excel upload elements */
+    width: 100%;
+    justify-content: center;
 }
 
 .excel-upload input[type="file"] {
