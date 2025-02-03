@@ -33,11 +33,11 @@ async function processFiles() {
                 const projectName = extractProjectNameLine(text);
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
-                    // Clean the project name by removing all "R" followed by digits
+                    // Clean the project name by removing all "R" followed by digits and anything after a comma
                     let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     
-                    // Check if the name does not match "SET UP-0" to "SET UP-10"
-                    if (!/SET UP-(0|1|2|3|4|5|6|7|8|9|10)/i.test(cleanProjectName)) {
+                    // Check if there's a comma in the name
+                    if (!cleanProjectName.includes(',')) {
                         results.push({ projectName: cleanProjectName, cycleTime });
 
                         // Parse cycle time (hours, minutes, seconds)
@@ -76,7 +76,7 @@ async function processFiles() {
                         row.insertCell().textContent = cleanProjectName;
                         row.insertCell().textContent = cycleTime;
                     } else {
-                        console.log(`Skipping project name with SET UP pattern: ${cleanProjectName}`);
+                        console.log(`Skipping project name with comma: ${cleanProjectName}`);
                     }
                 }
             }
