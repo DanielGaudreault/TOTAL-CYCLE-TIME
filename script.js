@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let fileInputs = [];
+let results = [];
 let totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
 let cycleTimesPerItem = {}; // To store total cycle time per item
 
@@ -106,7 +107,6 @@ async function processFiles() {
     }
 }
 
-// Rest of your functions (readFile, parsePDF, extractProjectNameLine, extractCycleTime, resetResults, updateToExcel) remain unchanged.
 function readFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -176,12 +176,26 @@ function extractCycleTime(text) {
 
 function resetResults() {
     results = [];
+    totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
+    cycleTimesPerItem = {};
     const resultsTable = document.getElementById('resultsTable');
     if (resultsTable) {
         resultsTable.querySelector('tbody').innerHTML = '';
     }
-    document.getElementById('fileInput').value = '';
+
+    // Reset all file inputs
+    const fileInputsDiv = document.getElementById('fileInputs');
+    fileInputsDiv.innerHTML = ''; // Clear all file inputs
+    fileInputs = []; // Reset the fileInputs array
+    addFileInput(); // Add one file input back
+
+    // Clear the file input for Excel upload
     document.getElementById('uploadExcelInput').value = '';
+
+    // Reset loading display
+    const loading = document.getElementById('loading');
+    loading.style.display = 'none';
+    loading.textContent = 'Processing...';
 }
 
 function updateToExcel() {
@@ -198,8 +212,6 @@ function updateToExcel() {
     const reader = new FileReader();
     reader.onload = function (e) {
         try {
-            // Read the Excel file
-            console.log('Reading Excel file...');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
 
