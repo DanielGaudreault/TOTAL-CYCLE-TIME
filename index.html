@@ -7,23 +7,23 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="icon" type="image/png" href="images/main logo 2.png"> <!-- Updated Favicon -->
-    <!-- For iOS -->
+    <link rel="icon" type="image/png" href="images/main logo 2.png">
     <link rel="apple-touch-icon" sizes="180x180" href="images/icons/apple-touch-icon.png">
-    <!-- For Android -->
-    <link rel="manifest" href="manifest.json"> <!-- Manifest file for PWA -->
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div class="container">
-        <h1>PDF Data Extractor</h1>
-        <div class="file-section">
+    <main class="container">
+        <header>
+            <h1>PDF Data Extractor</h1>
+        </header>
+        <section class="file-section">
             <div id="fileInputs"></div>
             <button id="addFileInput">Add File Input</button>
             <button id="processButton">Process Files</button>
             <button id="resetButton">Reset Results</button>
-        </div>
-        <div id="loading" class="loading">Processing...</div>
-        <table id="resultsTable">
+        </section>
+        <div id="loading" class="loading" aria-live="polite">Processing...</div>
+        <table id="resultsTable" aria-label="Results of processed PDF files">
             <thead>
                 <tr>
                     <th>File Name</th>
@@ -33,11 +33,11 @@
             </thead>
             <tbody></tbody>
         </table>
-        <div class="upload-section">
-            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls">
+        <section class="upload-section">
+            <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Upload Excel file">
             <button id="uploadExcelButton">Update to Excel</button>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script src="script.js"></script>
 </body>
