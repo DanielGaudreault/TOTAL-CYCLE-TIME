@@ -12,36 +12,38 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <main class="container">
-        <header>
-            <h1>PDF Data Extractor</h1>
-        </header>
-        <section class="file-section">
-            <div id="fileInputs" class="file-inputs"></div>
-            <div class="button-group">
-                <button id="addFileInput">Add File Input</button>
-                <button id="processButton">Process Files</button>
-                <button id="resetButton">Reset Results</button>
-            </div>
-        </section>
-        <div id="loading" class="loading" aria-live="polite">Processing...</div>
-        <table id="resultsTable" aria-label="Results of processed PDF files">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Project Name</th>
-                    <th>Total Cycle Time</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <section class="upload-section">
-            <div class="excel-upload">
-                <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Upload Excel file">
-                <button id="uploadExcelButton">Update to Excel</button>
-            </div>
-        </section>
-    </main>
+    <div class="background">
+        <main class="container">
+            <header>
+                <h1>PDF Data Extractor</h1>
+            </header>
+            <section class="file-section">
+                <div id="fileInputs" class="file-inputs"></div>
+                <div class="button-group">
+                    <button id="addFileInput">Add File Input</button>
+                    <button id="processButton">Process Files</button>
+                    <button id="resetButton">Reset Results</button>
+                </div>
+            </section>
+            <div id="loading" class="loading" aria-live="polite">Processing...</div>
+            <table id="resultsTable" aria-label="Results of processed PDF files">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Project Name</th>
+                        <th>Total Cycle Time</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <section class="upload-section">
+                <div class="excel-upload">
+                    <input type="file" id="uploadExcelInput" accept=".xlsx, .xls" aria-label="Upload Excel file">
+                    <button id="uploadExcelButton">Update to Excel</button>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script src="script.js"></script>
 </body>
