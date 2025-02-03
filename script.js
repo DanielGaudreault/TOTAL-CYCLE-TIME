@@ -34,44 +34,53 @@ async function processFiles() {
                 const cycleTime = extractCycleTime(text);
                 if (projectName && cycleTime) {
                     // Clean the project name by removing all "R" followed by digits (e.g., "R1", "R2", "R3")
-                    const cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
-                    results.push({ projectName: cleanProjectName, cycleTime });
+                    let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
+                    
+                    // Remove anything after and including a comma
+                    cleanProjectName = cleanProjectName.split(',')[0].trim();
 
-                    // Parse cycle time (hours, minutes, seconds)
-                    const timeParts = cycleTime.split(' ');
-                    const hours = parseInt(timeParts[0].replace('h', ''), 10);
-                    const minutes = parseInt(timeParts[1].replace('m', ''), 10);
-                    const seconds = parseInt(timeParts[2].replace('s', ''), 10);
+                    // Check if there's no comma or anything beyond
+                    if (cleanProjectName) {
+                        results.push({ projectName: cleanProjectName, cycleTime });
 
-                    console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
+                        // Parse cycle time (hours, minutes, seconds)
+                        const timeParts = cycleTime.split(' ');
+                        const hours = parseInt(timeParts[0].replace('h', ''), 10);
+                        const minutes = parseInt(timeParts[1].replace('m', ''), 10);
+                        const seconds = parseInt(timeParts[2].replace('s', ''), 10);
 
-                    // Update the cycleTimesPerItem map
-                    if (!cycleTimesPerItem[cleanProjectName]) {
-                        cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
+                        console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
+
+                        // Update the cycleTimesPerItem map
+                        if (!cycleTimesPerItem[cleanProjectName]) {
+                            cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
+                        }
+
+                        // Add this cycle time to the corresponding item
+                        cycleTimesPerItem[cleanProjectName].hours += hours;
+                        cycleTimesPerItem[cleanProjectName].minutes += minutes;
+                        cycleTimesPerItem[cleanProjectName].seconds += seconds;
+
+                        // Handle overflow for seconds
+                        if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
+                            cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
+                            cycleTimesPerItem[cleanProjectName].seconds %= 60;
+                        }
+
+                        // Handle overflow for minutes
+                        if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
+                            cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
+                            cycleTimesPerItem[cleanProjectName].minutes %= 60;
+                        }
+
+                        // Add a row for each PDF processed
+                        const row = tbody.insertRow();
+                        row.insertCell().textContent = file.name;
+                        row.insertCell().textContent = cleanProjectName;
+                        row.insertCell().textContent = cycleTime;
+                    } else {
+                        console.log(`Skipping project name with comma: ${projectName}`);
                     }
-
-                    // Add this cycle time to the corresponding item
-                    cycleTimesPerItem[cleanProjectName].hours += hours;
-                    cycleTimesPerItem[cleanProjectName].minutes += minutes;
-                    cycleTimesPerItem[cleanProjectName].seconds += seconds;
-
-                    // Handle overflow for seconds
-                    if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
-                        cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
-                        cycleTimesPerItem[cleanProjectName].seconds %= 60;
-                    }
-
-                    // Handle overflow for minutes
-                    if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
-                        cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
-                        cycleTimesPerItem[cleanProjectName].minutes %= 60;
-                    }
-
-                    // Add a row for each PDF processed
-                    const row = tbody.insertRow();
-                    row.insertCell().textContent = file.name;
-                    row.insertCell().textContent = cleanProjectName;
-                    row.insertCell().textContent = cycleTime;
                 }
             }
         }
