@@ -2,16 +2,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
+    document.getElementById('fileInput').addEventListener('change', updateFileCount);
 });
 
 let totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
 let cycleTimesPerItem = {}; // To store total cycle time per item
+
+function updateFileCount() {
+    const countDisplay = document.getElementById('countDisplay');
+    countDisplay.textContent = document.getElementById('fileInput').files.length;
+}
 
 async function processFiles() {
     const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable');
     const tbody = resultsTable.querySelector('tbody');
+    const countDisplay = document.getElementById('countDisplay');
 
     if (fileInput.files.length === 0) {
         alert('Please select at least one file.');
@@ -88,10 +95,11 @@ async function processFiles() {
         alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
+        countDisplay.textContent = fileInput.files.length;
     }
 }
 
-// ... Rest of your functions remain unchanged.
+// Rest of your functions (readFile, parsePDF, extractProjectNameLine, extractCycleTime, resetResults, updateToExcel) remain unchanged.
 function readFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
