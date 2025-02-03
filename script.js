@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
     document.getElementById('addFileInput').addEventListener('click', addFileInput);
 
-    // Start with one file input for simplicity
+    // Start with one file input
     addFileInput();
 });
 
@@ -33,17 +33,18 @@ async function processFiles() {
     cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
-    let totalFiles = 0;
-    fileInputs.forEach(input => totalFiles += input.files.length);
+    let totalFiles = fileInputs.reduce((sum, input) => sum + input.files.length, 0);
     loading.textContent = `Processing ${totalFiles} files...`;
 
     try {
+        let processedFiles = 0;
         for (let i = 0; i < fileInputs.length; i++) {
             const fileInput = fileInputs[i];
-            for (let j = 0; j < fileInput.files.length; j++) {
+            for (let j = 0; j < fileInput.files.length; j++) { // Loop through each file in the input
                 const file = fileInput.files[j];
                 if (file.type === 'application/pdf') {
-                    loading.textContent = `Processing file ${j + 1} from input ${i + 1}...`;
+                    processedFiles++;
+                    loading.textContent = `Processing file ${processedFiles} of ${totalFiles}...`;
                     
                     const content = await readFile(file);
                     const text = await parsePDF(content);
