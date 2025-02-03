@@ -17,13 +17,12 @@
     <div class="container">
         <h1>PDF Data Extractor</h1>
         <div class="file-section">
-            <input type="file" id="fileInput" multiple accept=".pdf">
-            <p>Note: Only the first 50 selected files will be processed.</p>
+            <div id="fileInputs"></div>
+            <button id="addFileInput">Add File</button>
             <button id="processButton">Process Files</button>
             <button id="resetButton">Reset Results</button>
         </div>
         <div id="loading" class="loading">Processing...</div>
-        <div id="fileCount">Files selected: <span id="countDisplay">0</span></div>
         <table id="resultsTable">
             <thead>
                 <tr>
