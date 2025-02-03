@@ -91,7 +91,7 @@ async function processFiles() {
     }
 }
 
-// The rest of your functions (readFile, parsePDF, extractProjectNameLine, extractCycleTime, resetResults, updateToExcel) remain the same.
+// ... Rest of your functions (readFile, parsePDF, extractProjectNameLine, extractCycleTime, resetResults, updateToExcel) remain unchanged.
 
 function readFile(file) {
     return new Promise((resolve, reject) => {
