@@ -30,7 +30,6 @@ async function processFiles() {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (file.type === 'application/pdf') {
-                // Update loading text to show progress
                 loading.textContent = `Processing file ${i + 1} of ${files.length}...`;
                 
                 const content = await readFile(file);
@@ -41,7 +40,7 @@ async function processFiles() {
                     let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
                     
                     if (!cleanProjectName.includes(',')) {
-                        results.push({ projectName: cleanProjectName, cycleTime });
+                        results.push({ projectName: cleanProjectName, cycleTime, fileName: file.name });
 
                         const timeParts = cycleTime.split(' ');
                         const hours = parseInt(timeParts[0].replace('h', ''), 10);
@@ -58,11 +57,13 @@ async function processFiles() {
                         cycleTimesPerItem[cleanProjectName].minutes += minutes;
                         cycleTimesPerItem[cleanProjectName].seconds += seconds;
 
+                        // Handle overflow for seconds
                         if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
                             cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
                             cycleTimesPerItem[cleanProjectName].seconds %= 60;
                         }
 
+                        // Handle overflow for minutes
                         if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
                             cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
                             cycleTimesPerItem[cleanProjectName].minutes %= 60;
@@ -89,6 +90,8 @@ async function processFiles() {
         loading.style.display = 'none';
     }
 }
+
+// The rest of your functions (readFile, parsePDF, extractProjectNameLine, extractCycleTime, resetResults, updateToExcel) remain the same.
 
 function readFile(file) {
     return new Promise((resolve, reject) => {
