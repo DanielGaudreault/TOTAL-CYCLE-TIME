@@ -2,89 +2,90 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('processButton').addEventListener('click', processFiles);
     document.getElementById('resetButton').addEventListener('click', resetResults);
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
-    document.getElementById('fileInput').addEventListener('change', updateFileCount);
+    document.getElementById('addFileInput').addEventListener('click', addFileInput);
+
+    // Start with one file input for simplicity
+    addFileInput();
 });
 
+let fileInputs = [];
 let totalCycleTime = { hours: 0, minutes: 0, seconds: 0 };
 let cycleTimesPerItem = {}; // To store total cycle time per item
 
-function updateFileCount() {
-    const countDisplay = document.getElementById('countDisplay');
-    const fileCount = Math.min(document.getElementById('fileInput').files.length, 50); // Cap at 50
-    countDisplay.textContent = fileCount;
+function addFileInput() {
+    const fileInputsDiv = document.getElementById('fileInputs');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf';
+    fileInput.name = 'file[]'; // name for form data if needed
+    fileInputs.push(fileInput);
+    fileInputsDiv.appendChild(fileInput);
 }
 
 async function processFiles() {
-    const fileInput = document.getElementById('fileInput');
     const loading = document.getElementById('loading');
     const resultsTable = document.getElementById('resultsTable');
     const tbody = resultsTable.querySelector('tbody');
-    const countDisplay = document.getElementById('countDisplay');
-
-    if (fileInput.files.length === 0) {
-        alert('Please select at least one file.');
-        return;
-    }
 
     results = [];
     totalCycleTime = { hours: 0, minutes: 0, seconds: 0 }; // Reset total cycle time
     cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
-    
-    // Cap processing at 50 files
-    const filesToProcess = Array.from(fileInput.files).slice(0, 50);
-    loading.textContent = `Processing ${filesToProcess.length} files...`;
+    loading.textContent = `Processing ${fileInputs.length} files...`;
 
     try {
-        for (let i = 0; i < filesToProcess.length; i++) {
-            const file = filesToProcess[i];
-            if (file.type === 'application/pdf') {
-                loading.textContent = `Processing file ${i + 1} of ${filesToProcess.length}...`;
-                
-                const content = await readFile(file);
-                const text = await parsePDF(content);
-                const projectName = extractProjectNameLine(text);
-                const cycleTime = extractCycleTime(text);
-                if (projectName && cycleTime) {
-                    let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
+        for (let i = 0; i < fileInputs.length; i++) {
+            const fileInput = fileInputs[i];
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.type === 'application/pdf') {
+                    loading.textContent = `Processing file ${i + 1} of ${fileInputs.length}...`;
                     
-                    if (!cleanProjectName.includes(',')) {
-                        results.push({ projectName: cleanProjectName, cycleTime, fileName: file.name });
+                    const content = await readFile(file);
+                    const text = await parsePDF(content);
+                    const projectName = extractProjectNameLine(text);
+                    const cycleTime = extractCycleTime(text);
+                    if (projectName && cycleTime) {
+                        let cleanProjectName = projectName.split(':')[1].trim().replace(/R\d+/g, '').trim();
+                        
+                        if (!cleanProjectName.includes(',')) {
+                            results.push({ projectName: cleanProjectName, cycleTime, fileName: file.name });
 
-                        const timeParts = cycleTime.split(' ');
-                        const hours = parseInt(timeParts[0].replace('h', ''), 10);
-                        const minutes = parseInt(timeParts[1].replace('m', ''), 10);
-                        const seconds = parseInt(timeParts[2].replace('s', ''), 10);
+                            const timeParts = cycleTime.split(' ');
+                            const hours = parseInt(timeParts[0].replace('h', ''), 10);
+                            const minutes = parseInt(timeParts[1].replace('m', ''), 10);
+                            const seconds = parseInt(timeParts[2].replace('s', ''), 10);
 
-                        console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
+                            console.log(`Parsed cycle time from ${file.name}: ${hours}h ${minutes}m ${seconds}s`);
 
-                        if (!cycleTimesPerItem[cleanProjectName]) {
-                            cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
+                            if (!cycleTimesPerItem[cleanProjectName]) {
+                                cycleTimesPerItem[cleanProjectName] = { hours: 0, minutes: 0, seconds: 0 };
+                            }
+
+                            cycleTimesPerItem[cleanProjectName].hours += hours;
+                            cycleTimesPerItem[cleanProjectName].minutes += minutes;
+                            cycleTimesPerItem[cleanProjectName].seconds += seconds;
+
+                            // Handle overflow for seconds
+                            if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
+                                cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
+                                cycleTimesPerItem[cleanProjectName].seconds %= 60;
+                            }
+
+                            // Handle overflow for minutes
+                            if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
+                                cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
+                                cycleTimesPerItem[cleanProjectName].minutes %= 60;
+                            }
+
+                            const row = tbody.insertRow();
+                            row.insertCell().textContent = file.name;
+                            row.insertCell().textContent = cleanProjectName;
+                            row.insertCell().textContent = cycleTime;
+                        } else {
+                            console.log(`Skipping project name with comma: ${cleanProjectName}`);
                         }
-
-                        cycleTimesPerItem[cleanProjectName].hours += hours;
-                        cycleTimesPerItem[cleanProjectName].minutes += minutes;
-                        cycleTimesPerItem[cleanProjectName].seconds += seconds;
-
-                        // Handle overflow for seconds
-                        if (cycleTimesPerItem[cleanProjectName].seconds >= 60) {
-                            cycleTimesPerItem[cleanProjectName].minutes += Math.floor(cycleTimesPerItem[cleanProjectName].seconds / 60);
-                            cycleTimesPerItem[cleanProjectName].seconds %= 60;
-                        }
-
-                        // Handle overflow for minutes
-                        if (cycleTimesPerItem[cleanProjectName].minutes >= 60) {
-                            cycleTimesPerItem[cleanProjectName].hours += Math.floor(cycleTimesPerItem[cleanProjectName].minutes / 60);
-                            cycleTimesPerItem[cleanProjectName].minutes %= 60;
-                        }
-
-                        const row = tbody.insertRow();
-                        row.insertCell().textContent = file.name;
-                        row.insertCell().textContent = cleanProjectName;
-                        row.insertCell().textContent = cycleTime;
-                    } else {
-                        console.log(`Skipping project name with comma: ${cleanProjectName}`);
                     }
                 }
             }
@@ -98,7 +99,6 @@ async function processFiles() {
         alert('An error occurred while processing the files.');
     } finally {
         loading.style.display = 'none';
-        countDisplay.textContent = filesToProcess.length;
     }
 }
 
