@@ -14,7 +14,7 @@ body {
     padding: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Align to top for smaller screens */
     min-height: 100vh;
 }
 
@@ -23,7 +23,7 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    width: 80%;
+    width: 90%;
     max-width: 1000px;
 }
 
@@ -34,9 +34,28 @@ h1 {
 }
 
 .file-section, .upload-section {
-    display: flex;
-    flex-direction: column;
     margin-bottom: 20px;
+}
+
+.file-inputs {
+    margin-bottom: 10px;
+}
+
+.file-inputs > div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.file-inputs input[type="file"] {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 button {
@@ -47,6 +66,7 @@ button {
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.3s;
+    font-size: 16px; /* Make buttons slightly larger for touch devices */
 }
 
 button:hover {
@@ -56,6 +76,7 @@ button:hover {
 .remove-button {
     background-color: var(--danger-color);
     margin-left: 10px;
+    padding: 5px 10px; /* Smaller for remove button */
 }
 
 .remove-button:hover {
@@ -67,6 +88,7 @@ button:hover {
     text-align: center;
     margin-bottom: 20px;
     color: var(--primary-color);
+    font-weight: bold;
 }
 
 #loading::after {
@@ -121,20 +143,32 @@ tr:nth-child(even) {
     background-color: #f2f2f2;
 }
 
-input[type="file"] {
-    margin-bottom: 10px;
+.excel-upload {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.excel-upload input[type="file"] {
+    flex-grow: 1;
 }
 
 @media (max-width: 600px) {
     .container {
         width: 95%;
     }
-    .file-section, .upload-section {
+    .button-group {
         flex-direction: column;
     }
-    input[type="file"], button {
+    button {
         width: 100%;
-        margin: 5px 0;
+        margin-bottom: 5px;
+    }
+    .excel-upload {
+        flex-direction: column;
+    }
+    .excel-upload button {
+        width: 100%;
     }
 }
 
