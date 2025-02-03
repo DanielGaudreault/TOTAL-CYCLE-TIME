@@ -3,9 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('resetButton').addEventListener('click', resetResults);
     document.getElementById('uploadExcelButton').addEventListener('click', updateToExcel);
     document.getElementById('addFileInput').addEventListener('click', addFileInput);
-
-    // Start with one file input
-    addFileInput();
 });
 
 let fileInputs = [];
@@ -15,13 +12,32 @@ let cycleTimesPerItem = {}; // To store total cycle time per item
 
 function addFileInput() {
     const fileInputsDiv = document.getElementById('fileInputs');
+    const fileInputContainer = document.createElement('div');
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.pdf';
     fileInput.name = 'file[]'; // name for form data if needed
     fileInput.multiple = true; // Allow multiple file selection
+    fileInput.id = `fileInput${fileInputs.length}`;
+
+    const removeButton = document.createElement('button');
+    removeButton.textContent = 'Remove';
+    removeButton.classList.add('remove-button');
+    removeButton.addEventListener('click', () => removeFileInput(fileInputContainer, fileInput.id));
+
+    fileInputContainer.appendChild(fileInput);
+    fileInputContainer.appendChild(removeButton);
+    fileInputsDiv.appendChild(fileInputContainer);
     fileInputs.push(fileInput);
-    fileInputsDiv.appendChild(fileInput);
+}
+
+function removeFileInput(container, id) {
+    const fileInputsDiv = document.getElementById('fileInputs');
+    const index = fileInputs.findIndex(input => input.id === id);
+    if (index !== -1) {
+        fileInputs.splice(index, 1);
+        fileInputsDiv.removeChild(container);
+    }
 }
 
 async function processFiles() {
