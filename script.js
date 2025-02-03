@@ -18,6 +18,7 @@ function addFileInput() {
     fileInput.type = 'file';
     fileInput.accept = '.pdf';
     fileInput.name = 'file[]'; // name for form data if needed
+    fileInput.multiple = true; // Allow multiple file selection
     fileInputs.push(fileInput);
     fileInputsDiv.appendChild(fileInput);
 }
@@ -32,15 +33,17 @@ async function processFiles() {
     cycleTimesPerItem = {}; // Reset cycle times per item map
     tbody.innerHTML = '';
     loading.style.display = 'block';
-    loading.textContent = `Processing ${fileInputs.length} files...`;
+    let totalFiles = 0;
+    fileInputs.forEach(input => totalFiles += input.files.length);
+    loading.textContent = `Processing ${totalFiles} files...`;
 
     try {
         for (let i = 0; i < fileInputs.length; i++) {
             const fileInput = fileInputs[i];
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
+            for (let j = 0; j < fileInput.files.length; j++) {
+                const file = fileInput.files[j];
                 if (file.type === 'application/pdf') {
-                    loading.textContent = `Processing file ${i + 1} of ${fileInputs.length}...`;
+                    loading.textContent = `Processing file ${j + 1} from input ${i + 1}...`;
                     
                     const content = await readFile(file);
                     const text = await parsePDF(content);
