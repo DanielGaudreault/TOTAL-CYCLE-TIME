@@ -15,7 +15,7 @@ body {
 }
 
 .background {
-    background-image: url('city\ wallpaper.jpg'); /* Ensure the path is correct relative to your CSS file */
+    background-image: url('city wallpaper.jpg'); /* Ensure the path is correct relative to your CSS file */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
