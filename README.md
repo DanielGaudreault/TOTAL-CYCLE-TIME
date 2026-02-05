@@ -1,5 +1,10 @@
 # PDF Data Extractor to Excel Updater
+
 A simple web application to extract project names and cycle times from PDFs and update an Excel sheet.
+
+## Live Demo
+
+Access the application here: [PDF Data Extractor to Excel Updater](https://danielgaudreault.github.io/TOTAL-CYCLE-TIME/)
 
 ## Prerequisites
 
