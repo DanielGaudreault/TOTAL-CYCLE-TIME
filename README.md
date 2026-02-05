@@ -71,7 +71,7 @@ For this project, we'll use a simple HTTP server from Node.js for serving files:
    This defaults to `localhost:8000`.
 
 2. **Open in Browser:**
-   - Navigate to `http://localhost:8000/` in your browser.
+   - Navigate to `https://danielgaudreault.github.io/TOTAL-CYCLE-TIME/` in your browser.
 
 ### Step 5: Using the Application
 
